@@ -3,7 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Models\Order;
+use App\Models\OrderItem;
 use App\Models\Promocode;
+use App\Models\Product;
 use App\Services\DaDataService;
 use App\Services\YooKassaService;
 use Illuminate\Http\Request;
@@ -19,7 +21,24 @@ class CheckoutController extends Controller
 
     public function create()
     {
-        return view('checkout.create');
+        $cart = session('cart', []);
+        $products = Product::query()->whereIn('id', array_keys($cart))->get()->keyBy('id');
+        $items = collect($cart)->map(function ($qty, $productId) use ($products) {
+            $product = $products->get((int) $productId);
+            if (! $product) {
+                return null;
+            }
+
+            return [
+                'product' => $product,
+                'quantity' => (int) $qty,
+                'line_total' => (float) $product->price * (int) $qty,
+            ];
+        })->filter()->values();
+
+        $cartTotal = $items->sum('line_total');
+
+        return view('checkout.create', compact('items', 'cartTotal'));
     }
 
     public function addressSuggestions(Request $request)
@@ -38,12 +57,30 @@ class CheckoutController extends Controller
         $validated = $request->validate([
             'address' => ['required', 'array'],
             'address.full' => ['required', 'string'],
-            'total_price' => ['required', 'numeric', 'min:1'],
             'promocode' => ['nullable', 'string'],
         ]);
 
+        $cart = session('cart', []);
+        $products = Product::query()->whereIn('id', array_keys($cart))->get()->keyBy('id');
+        $items = collect($cart)->map(function ($qty, $productId) use ($products) {
+            $product = $products->get((int) $productId);
+            if (! $product) {
+                return null;
+            }
+
+            return [
+                'product' => $product,
+                'quantity' => (int) $qty,
+                'line_total' => (float) $product->price * (int) $qty,
+            ];
+        })->filter()->values();
+
+        if ($items->isEmpty()) {
+            return back()->withErrors(['cart' => 'Корзина пуста. Добавьте товары перед оформлением.']);
+        }
+
         $promocode = null;
-        $total = (float) $validated['total_price'];
+        $total = (float) $items->sum('line_total');
 
         if (! empty($validated['promocode'])) {
             $promocode = Promocode::query()
@@ -65,15 +102,28 @@ class CheckoutController extends Controller
             'promocode_id' => $promocode?->id,
         ]);
 
+        foreach ($items as $item) {
+            OrderItem::query()->create([
+                'order_id' => $order->id,
+                'product_id' => $item['product']->id,
+                'quantity' => $item['quantity'],
+                'price' => $item['product']->price,
+            ]);
+        }
+
         $payment = $this->yooKassaService->createPayment($order);
 
         if (! $payment) {
-            return back()->withErrors(['payment' => 'Не удалось создать ссылку оплаты.']);
+            return back()->withErrors([
+                'payment' => 'Не удалось создать ссылку оплаты YooMoney. Проверьте YOOKASSA_SHOP_ID/YOOKASSA_SECRET_KEY и доступ к API.',
+            ]);
         }
 
         $order->update([
             'yookassa_payment_id' => $payment['id'] ?? null,
         ]);
+
+        session()->forget('cart');
 
         return redirect($payment['confirmation']['confirmation_url']);
     }

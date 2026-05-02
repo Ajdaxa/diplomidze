@@ -21,10 +21,22 @@
                     <p class="font-medium">{{ $promocode->code }}</p>
                     <p class="text-sm text-stone-500">{{ $promocode->usage_count }} использований</p>
                 </div>
-                <form method="POST" action="{{ route('admin.promocodes.broadcast', $promocode) }}">
-                    @csrf
-                    <button class="rounded border border-stone-300 px-3 py-2 text-sm">Рассылка кода в TG</button>
-                </form>
+                <div class="flex items-center gap-2">
+                    <form method="POST" action="{{ route('admin.promocodes.update', $promocode) }}" class="flex items-center gap-2">
+                        @csrf @method('PATCH')
+                        <input type="number" name="value" value="{{ $promocode->value }}" class="w-24 rounded border border-stone-300 px-2 py-1 text-sm">
+                        <label class="text-xs"><input type="checkbox" name="is_active" value="1" @checked($promocode->is_active)> active</label>
+                        <button class="rounded border border-stone-300 px-3 py-2 text-sm">Сохранить</button>
+                    </form>
+                    <form method="POST" action="{{ route('admin.promocodes.broadcast', $promocode) }}">
+                        @csrf
+                        <button class="rounded border border-stone-300 px-3 py-2 text-sm">Разослать промокод всем</button>
+                    </form>
+                    <form method="POST" action="{{ route('admin.promocodes.destroy', $promocode) }}">
+                        @csrf @method('DELETE')
+                        <button class="rounded border border-rose-300 px-3 py-2 text-sm text-rose-700">Удалить</button>
+                    </form>
+                </div>
             </div>
         @endforeach
     </div>

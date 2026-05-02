@@ -49,4 +49,26 @@ class PromocodeController extends Controller
 
         return back()->with('status', 'Рассылка поставлена в очередь.');
     }
+
+    public function update(Request $request, Promocode $promocode)
+    {
+        $validated = $request->validate([
+            'value' => ['required', 'numeric', 'min:1'],
+            'is_active' => ['nullable', 'boolean'],
+        ]);
+
+        $promocode->update([
+            'value' => $validated['value'],
+            'is_active' => $request->boolean('is_active'),
+        ]);
+
+        return back()->with('status', 'Промокод обновлен.');
+    }
+
+    public function destroy(Promocode $promocode)
+    {
+        $promocode->delete();
+
+        return back()->with('status', 'Промокод удален.');
+    }
 }

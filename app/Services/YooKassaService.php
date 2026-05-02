@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Order;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 
 class YooKassaService
@@ -36,6 +37,12 @@ class YooKassaService
             ]);
 
         if ($response->failed()) {
+            Log::warning('YooKassa createPayment failed', [
+                'status' => $response->status(),
+                'body' => $response->json(),
+                'order_id' => $order->id,
+            ]);
+
             return null;
         }
 

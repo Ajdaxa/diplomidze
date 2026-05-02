@@ -101,7 +101,7 @@ class OtpAuthController extends Controller
 
         session()->forget(['otp_cache_key']);
 
-        return redirect()->route('home');
+        return $this->redirectByRole(Auth::user());
     }
 
     public function loginWithPassword(Request $request)
@@ -124,7 +124,7 @@ class OtpAuthController extends Controller
 
         Auth::login($user, remember: true);
 
-        return redirect()->route('home');
+        return $this->redirectByRole($user);
     }
 
     public function logout()
@@ -134,5 +134,18 @@ class OtpAuthController extends Controller
         request()->session()->regenerateToken();
 
         return redirect()->route('otp.form');
+    }
+
+    private function redirectByRole(User $user)
+    {
+        if ($user->hasRole('courier')) {
+            return redirect()->route('courier.orders.index');
+        }
+
+        if ($user->hasAnyRole(['admin', 'manager'])) {
+            return redirect()->route('admin.dashboard');
+        }
+
+        return redirect()->route('home');
     }
 }

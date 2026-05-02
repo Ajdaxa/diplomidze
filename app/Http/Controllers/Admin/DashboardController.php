@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Order;
 use App\Models\Promocode;
+use App\Models\User;
 use Illuminate\Support\Facades\DB;
 
 class DashboardController extends Controller
@@ -24,6 +25,8 @@ class DashboardController extends Controller
             ->limit(10)
             ->get();
 
-        return view('admin.dashboard', compact('sales', 'promocodeUsage'));
+        $activeCouriersCount = User::role('courier')->whereNotNull('telegram_chat_id')->count();
+
+        return view('admin.dashboard', compact('sales', 'promocodeUsage', 'activeCouriersCount'));
     }
 }

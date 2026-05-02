@@ -17,11 +17,18 @@ class Product extends Model
         'price',
         'stock',
         'image',
+        'secondary_image',
+        'color',
+        'size',
+        'is_new_collection',
+        'is_limited_edition',
         'is_active',
     ];
 
     protected $casts = [
         'is_active' => 'bool',
+        'is_new_collection' => 'bool',
+        'is_limited_edition' => 'bool',
     ];
 
     public function auditLogs(): HasMany
