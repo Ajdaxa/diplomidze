@@ -11,9 +11,6 @@ use Spatie\Permission\PermissionRegistrar;
 
 class RolesAndUsersSeeder extends Seeder
 {
-    /**
-     * Run the database seeds.
-     */
     public function run(): void
     {
         app(PermissionRegistrar::class)->forgetCachedPermissions();
@@ -37,9 +34,10 @@ class RolesAndUsersSeeder extends Seeder
         }
 
         Product::query()->updateOrCreate(
-            ['slug' => 'silk-midi-dress'],
+            ['name' => 'Silk Midi Dress'],
             [
-                'name' => 'Silk Midi Dress',
+                'slug' => 'silk-midi-dress',
+                'category' => 'clothes',
                 'description' => 'Платье из шелка в минималистичном стиле.',
                 'price' => 7590,
                 'stock' => 12,
@@ -47,6 +45,8 @@ class RolesAndUsersSeeder extends Seeder
                 'secondary_image' => 'https://images.unsplash.com/photo-1485230895905-ec40ba36b9bc?auto=format&fit=crop&w=900&q=80',
                 'color' => 'black',
                 'size' => 'M',
+                'available_sizes' => ['XS', 'S', 'M', 'L', 'XL'],
+                'display_colors' => ['#000000', '#d4d4d4', '#a3a3a3'],
                 'is_new_collection' => true,
                 'is_limited_edition' => false,
                 'is_active' => true,
@@ -54,9 +54,10 @@ class RolesAndUsersSeeder extends Seeder
         );
 
         Product::query()->updateOrCreate(
-            ['slug' => 'premium-wool-jacket'],
+            ['name' => 'Premium Wool Jacket'],
             [
-                'name' => 'Premium Wool Jacket',
+                'slug' => 'premium-wool-jacket',
+                'category' => 'clothes',
                 'description' => 'Структурный жакет из премиальной шерсти.',
                 'price' => 11490,
                 'stock' => 2,
@@ -64,6 +65,8 @@ class RolesAndUsersSeeder extends Seeder
                 'secondary_image' => 'https://images.unsplash.com/photo-1529139574466-a303027c1d8b?auto=format&fit=crop&w=900&q=80',
                 'color' => 'wine',
                 'size' => 'S',
+                'available_sizes' => ['S', 'M', 'L'],
+                'display_colors' => ['#5b1f2a', '#292524', '#78716c'],
                 'is_new_collection' => false,
                 'is_limited_edition' => true,
                 'is_active' => true,

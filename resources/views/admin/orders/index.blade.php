@@ -1,7 +1,9 @@
-@extends('layouts.app')
+@extends('layouts.admin')
+
+@section('title', 'Заказы')
+@section('heading', 'Заказы')
 
 @section('content')
-    <h1 class="mb-6 text-3xl font-semibold">Заказы</h1>
     <div class="space-y-4">
         @foreach($orders as $order)
             <div class="rounded-xl border border-stone-200 bg-white p-4">

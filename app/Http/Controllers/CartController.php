@@ -7,22 +7,54 @@ use Illuminate\Http\Request;
 
 class CartController extends Controller
 {
+    private function cartSession(): array
+    {
+        return session('cart', []);
+    }
+
+    private function lineKey(int $productId, string $size): string
+    {
+        return $productId.'|'.strtoupper(trim($size));
+    }
+
+    private function parseLines(array $raw): array
+    {
+        $lines = [];
+        foreach ($raw as $key => $qty) {
+            if (! is_string($key) || ! str_contains($key, '|')) {
+                continue;
+            }
+            [$id, $size] = explode('|', $key, 2);
+            $lines[] = [
+                'product_id' => (int) $id,
+                'size' => $size,
+                'quantity' => max(1, (int) $qty),
+                'key' => $key,
+            ];
+        }
+
+        return $lines;
+    }
+
     public function index()
     {
-        $cart = session('cart', []);
-        $products = Product::query()->whereIn('id', array_keys($cart))->get()->keyBy('id');
+        $raw = $this->cartSession();
+        $lines = $this->parseLines($raw);
+        $products = Product::query()->whereIn('id', collect($lines)->pluck('product_id')->unique())->get()->keyBy('id');
 
-        $items = collect($cart)
-            ->map(function ($qty, $productId) use ($products) {
-                $product = $products->get((int) $productId);
+        $items = collect($lines)
+            ->map(function (array $line) use ($products) {
+                $product = $products->get($line['product_id']);
                 if (! $product) {
                     return null;
                 }
 
                 return [
                     'product' => $product,
-                    'quantity' => (int) $qty,
-                    'line_total' => $product->price * $qty,
+                    'size' => $line['size'],
+                    'quantity' => $line['quantity'],
+                    'line_total' => (float) $product->price * $line['quantity'],
+                    'key' => $line['key'],
                 ];
             })
             ->filter()
@@ -33,10 +65,23 @@ class CartController extends Controller
         return view('cart.index', compact('items', 'total'));
     }
 
-    public function add(Product $product)
+    public function add(Request $request, Product $product)
     {
-        $cart = session('cart', []);
-        $cart[$product->id] = ($cart[$product->id] ?? 0) + 1;
+        $validated = $request->validate([
+            'size' => ['required', 'string', 'max:20'],
+            'quantity' => ['nullable', 'integer', 'min:1', 'max:20'],
+        ]);
+
+        $size = strtoupper(trim($validated['size']));
+        $allowed = array_map('strtoupper', $product->sizesList());
+        if (! in_array($size, $allowed, true)) {
+            return back()->withErrors(['size' => 'Выберите доступный размер.']);
+        }
+
+        $qty = (int) ($validated['quantity'] ?? 1);
+        $key = $this->lineKey($product->id, $size);
+        $cart = $this->cartSession();
+        $cart[$key] = ($cart[$key] ?? 0) + $qty;
         session(['cart' => $cart]);
 
         return back()->with('status', 'Товар добавлен в корзину.');
@@ -44,21 +89,30 @@ class CartController extends Controller
 
     public function update(Request $request, Product $product)
     {
-        $request->validate(['quantity' => ['required', 'integer', 'min:1', 'max:20']]);
+        $validated = $request->validate([
+            'size' => ['required', 'string', 'max:20'],
+            'quantity' => ['required', 'integer', 'min:1', 'max:20'],
+        ]);
 
-        $cart = session('cart', []);
-        if (isset($cart[$product->id])) {
-            $cart[$product->id] = (int) $request->integer('quantity');
+        $key = $this->lineKey($product->id, $validated['size']);
+        $cart = $this->cartSession();
+        if (array_key_exists($key, $cart)) {
+            $cart[$key] = (int) $validated['quantity'];
+            session(['cart' => $cart]);
         }
-        session(['cart' => $cart]);
 
         return back()->with('status', 'Корзина обновлена.');
     }
 
-    public function remove(Product $product)
+    public function remove(Request $request, Product $product)
     {
-        $cart = session('cart', []);
-        unset($cart[$product->id]);
+        $validated = $request->validate([
+            'size' => ['required', 'string', 'max:20'],
+        ]);
+
+        $key = $this->lineKey($product->id, $validated['size']);
+        $cart = $this->cartSession();
+        unset($cart[$key]);
         session(['cart' => $cart]);
 
         return back()->with('status', 'Товар удален из корзины.');

@@ -4,8 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Models\Order;
 use App\Models\OrderItem;
-use App\Models\Promocode;
 use App\Models\Product;
+use App\Models\Promocode;
 use App\Services\DaDataService;
 use App\Services\YooKassaService;
 use Illuminate\Http\Request;
@@ -19,23 +19,51 @@ class CheckoutController extends Controller
     ) {
     }
 
-    public function create()
+    private function cartLines(): array
     {
-        $cart = session('cart', []);
-        $products = Product::query()->whereIn('id', array_keys($cart))->get()->keyBy('id');
-        $items = collect($cart)->map(function ($qty, $productId) use ($products) {
-            $product = $products->get((int) $productId);
+        $raw = session('cart', []);
+        $lines = [];
+        foreach ($raw as $key => $qty) {
+            if (! is_string($key) || ! str_contains($key, '|')) {
+                continue;
+            }
+            [$id, $size] = explode('|', $key, 2);
+            $lines[] = [
+                'product_id' => (int) $id,
+                'size' => $size,
+                'quantity' => max(1, (int) $qty),
+            ];
+        }
+
+        return $lines;
+    }
+
+    private function buildCartItems(): \Illuminate\Support\Collection
+    {
+        $lines = $this->cartLines();
+        $products = Product::query()
+            ->whereIn('id', collect($lines)->pluck('product_id')->unique())
+            ->get()
+            ->keyBy('id');
+
+        return collect($lines)->map(function (array $line) use ($products) {
+            $product = $products->get($line['product_id']);
             if (! $product) {
                 return null;
             }
 
             return [
                 'product' => $product,
-                'quantity' => (int) $qty,
-                'line_total' => (float) $product->price * (int) $qty,
+                'size' => $line['size'],
+                'quantity' => $line['quantity'],
+                'line_total' => (float) $product->price * $line['quantity'],
             ];
         })->filter()->values();
+    }
 
+    public function create()
+    {
+        $items = $this->buildCartItems();
         $cartTotal = $items->sum('line_total');
 
         return view('checkout.create', compact('items', 'cartTotal'));
@@ -60,20 +88,7 @@ class CheckoutController extends Controller
             'promocode' => ['nullable', 'string'],
         ]);
 
-        $cart = session('cart', []);
-        $products = Product::query()->whereIn('id', array_keys($cart))->get()->keyBy('id');
-        $items = collect($cart)->map(function ($qty, $productId) use ($products) {
-            $product = $products->get((int) $productId);
-            if (! $product) {
-                return null;
-            }
-
-            return [
-                'product' => $product,
-                'quantity' => (int) $qty,
-                'line_total' => (float) $product->price * (int) $qty,
-            ];
-        })->filter()->values();
+        $items = $this->buildCartItems();
 
         if ($items->isEmpty()) {
             return back()->withErrors(['cart' => 'Корзина пуста. Добавьте товары перед оформлением.']);
@@ -106,6 +121,7 @@ class CheckoutController extends Controller
             OrderItem::query()->create([
                 'order_id' => $order->id,
                 'product_id' => $item['product']->id,
+                'size' => $item['size'],
                 'quantity' => $item['quantity'],
                 'price' => $item['product']->price,
             ]);
@@ -130,6 +146,8 @@ class CheckoutController extends Controller
 
     public function success(Order $order)
     {
+        abort_unless($order->user_id === Auth::id(), 403);
+
         return view('checkout.success', compact('order'));
     }
 

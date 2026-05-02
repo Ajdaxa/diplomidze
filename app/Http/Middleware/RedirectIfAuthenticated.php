@@ -28,7 +28,7 @@ class RedirectIfAuthenticated
                 }
 
                 if ($user && method_exists($user, 'hasAnyRole') && $user->hasAnyRole(['admin', 'manager'])) {
-                    return redirect()->route('admin.dashboard');
+                    return redirect()->route('admin.hub');
                 }
 
                 return redirect(RouteServiceProvider::HOME);

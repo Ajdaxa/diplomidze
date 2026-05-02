@@ -143,7 +143,7 @@ class OtpAuthController extends Controller
         }
 
         if ($user->hasAnyRole(['admin', 'manager'])) {
-            return redirect()->route('admin.dashboard');
+            return redirect()->route('admin.hub');
         }
 
         return redirect()->route('home');

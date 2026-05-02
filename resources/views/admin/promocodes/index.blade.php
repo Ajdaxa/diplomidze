@@ -1,8 +1,10 @@
-@extends('layouts.app')
+@extends('layouts.admin')
+
+@section('title', 'Промокоды')
+@section('heading', 'Промокоды')
 
 @section('content')
-    <div class="mb-6 rounded-xl border border-stone-200 bg-white p-4">
-        <h1 class="mb-4 text-2xl font-semibold">Промокоды</h1>
+    <div class="mb-6 rounded-xl border border-neutral-200 bg-white p-4">
         <form method="POST" action="{{ route('admin.promocodes.store') }}" class="grid grid-cols-1 gap-3 md:grid-cols-3">
             @csrf
             <input name="code" placeholder="Код" class="rounded border border-stone-300 px-3 py-2" required>
