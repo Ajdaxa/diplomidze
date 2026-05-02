@@ -81,10 +81,20 @@ class CartController extends Controller
         $qty = (int) ($validated['quantity'] ?? 1);
         $key = $this->lineKey($product->id, $size);
         $cart = $this->cartSession();
+        $currentQty = (int) ($cart[$key] ?? 0);
+        if ($product->stock < 1) {
+            return back()->withErrors(['stock' => 'Товар закончился на складе.']);
+        }
+        if (($currentQty + $qty) > $product->stock) {
+            return back()->withErrors(['stock' => 'Нельзя добавить больше, чем есть на складе.']);
+        }
+
         $cart[$key] = ($cart[$key] ?? 0) + $qty;
         session(['cart' => $cart]);
 
-        return back()->with('status', 'Товар добавлен в корзину.');
+        return back()
+            ->with('status', 'Добавлено в корзину.')
+            ->with('status_type', 'success');
     }
 
     public function update(Request $request, Product $product)
@@ -101,7 +111,9 @@ class CartController extends Controller
             session(['cart' => $cart]);
         }
 
-        return back()->with('status', 'Корзина обновлена.');
+        return back()
+            ->with('status', 'Корзина обновлена.')
+            ->with('status_type', 'info');
     }
 
     public function remove(Request $request, Product $product)
@@ -115,6 +127,8 @@ class CartController extends Controller
         unset($cart[$key]);
         session(['cart' => $cart]);
 
-        return back()->with('status', 'Товар удален из корзины.');
+        return back()
+            ->with('status', 'Товар удален из корзины.')
+            ->with('status_type', 'warn');
     }
 }

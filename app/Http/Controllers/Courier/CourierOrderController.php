@@ -4,9 +4,11 @@ namespace App\Http\Controllers\Courier;
 
 use App\Http\Controllers\Controller;
 use App\Models\Order;
+use App\Models\Product;
 use App\Services\TelegramService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 
 class CourierOrderController extends Controller
 {
@@ -37,7 +39,25 @@ class CourierOrderController extends Controller
     {
         $this->authorizeCourierOrder($order);
 
-        $order->update(['status' => 'delivered']);
+        DB::transaction(function () use ($order): void {
+            /** @var Order|null $locked */
+            $locked = Order::query()->with('items')->lockForUpdate()->find($order->id);
+            if (! $locked) {
+                return;
+            }
+
+            if ($locked->status === 'pending') {
+                foreach ($locked->items as $item) {
+                    $product = Product::query()->lockForUpdate()->find($item->product_id);
+                    if (! $product || $product->stock < 1) {
+                        continue;
+                    }
+                    $product->decrement('stock', min($product->stock, (int) $item->quantity));
+                }
+            }
+
+            $locked->update(['status' => 'delivered']);
+        });
 
         if ($order->user?->telegram_chat_id) {
             $telegramService->orderDelivered($order->user->telegram_chat_id);

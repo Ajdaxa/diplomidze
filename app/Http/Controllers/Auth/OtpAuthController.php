@@ -18,9 +18,40 @@ class OtpAuthController extends Controller
     {
     }
 
-    public function showForm()
+    public function showForm(Request $request)
     {
+        if ($request->filled('redirect')) {
+            session(['url.intended' => (string) $request->query('redirect')]);
+        }
+
         return view('auth.otp-login');
+    }
+
+    public function showPasswordForm(Request $request)
+    {
+        if ($request->filled('redirect')) {
+            session(['url.intended' => (string) $request->query('redirect')]);
+        }
+
+        return view('auth.password-login');
+    }
+
+    public function showRegisterForm(Request $request)
+    {
+        if ($request->filled('redirect')) {
+            session(['url.intended' => (string) $request->query('redirect')]);
+        }
+
+        return view('auth.register');
+    }
+
+    public function showTelegramForm(Request $request)
+    {
+        if ($request->filled('redirect')) {
+            session(['url.intended' => (string) $request->query('redirect')]);
+        }
+
+        return view('auth.telegram-login');
     }
 
     public function sendCode(Request $request)
@@ -73,7 +104,9 @@ class OtpAuthController extends Controller
             'otp_cache_key' => $cacheKey,
         ]);
 
-        return back()->with('status', 'Код отправлен в Telegram.');
+        return back()
+            ->with('status', 'Код отправлен в Telegram.')
+            ->with('status_type', 'info');
     }
 
     public function verifyCode(Request $request)
@@ -101,7 +134,9 @@ class OtpAuthController extends Controller
 
         session()->forget(['otp_cache_key']);
 
-        return $this->redirectByRole(Auth::user());
+        return $this->redirectByRole(Auth::user())
+            ->with('status', 'Успешно авторизировались.')
+            ->with('status_type', 'success');
     }
 
     public function loginWithPassword(Request $request)
@@ -124,7 +159,59 @@ class OtpAuthController extends Controller
 
         Auth::login($user, remember: true);
 
-        return $this->redirectByRole($user);
+        return $this->redirectByRole($user)
+            ->with('status', 'Успешно авторизировались.')
+            ->with('status_type', 'success');
+    }
+
+    public function register(Request $request)
+    {
+        $validated = $request->validate([
+            'name' => ['required', 'string', 'max:120'],
+            'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
+            'phone' => ['nullable', 'string', 'max:30', 'unique:users,phone'],
+            'password' => ['required', 'string', 'min:6', 'confirmed'],
+        ]);
+
+        $user = User::query()->create([
+            'name' => trim($validated['name']),
+            'email' => strtolower(trim($validated['email'])),
+            'phone' => isset($validated['phone']) ? trim((string) $validated['phone']) : null,
+            'password' => $validated['password'],
+            'role' => 'client',
+        ]);
+        $user->syncRoles(['client']);
+
+        Auth::login($user, remember: true);
+
+        return redirect()->intended(route('home'))
+            ->with('status', 'Регистрация прошла успешно. Добро пожаловать!')
+            ->with('status_type', 'success');
+    }
+
+    public function telegramAutoRegister()
+    {
+        $token = Str::random(32);
+        $suffix = Str::lower(Str::random(8));
+
+        $user = User::query()->create([
+            'name' => 'Telegram User '.$suffix,
+            'email' => "tg_{$suffix}@dyab.local",
+            'password' => Str::random(24),
+            'role' => 'client',
+            'telegram_link_token' => $token,
+            'telegram_link_token_expires_at' => now()->addMinutes(30),
+        ]);
+        $user->syncRoles(['client']);
+
+        $botUsername = config('services.telegram.bot_username');
+        $link = $botUsername
+            ? "https://t.me/{$botUsername}?start={$token}"
+            : "Откройте бота и отправьте /start {$token}";
+
+        return redirect()->route('otp.telegram.form')
+            ->with('status', "Аккаунт создан. Подтвердите вход в Telegram: {$link}")
+            ->with('status_type', 'info');
     }
 
     public function logout()
@@ -133,19 +220,21 @@ class OtpAuthController extends Controller
         request()->session()->invalidate();
         request()->session()->regenerateToken();
 
-        return redirect()->route('otp.form');
+        return redirect()->route('otp.form')
+            ->with('status', 'Вы вышли из аккаунта.')
+            ->with('status_type', 'info');
     }
 
     private function redirectByRole(User $user)
     {
         if ($user->hasRole('courier')) {
-            return redirect()->route('courier.orders.index');
+            return redirect()->intended(route('courier.orders.index'));
         }
 
         if ($user->hasAnyRole(['admin', 'manager'])) {
-            return redirect()->route('admin.hub');
+            return redirect()->intended(route('admin.hub'));
         }
 
-        return redirect()->route('home');
+        return redirect()->intended(route('home'));
     }
 }

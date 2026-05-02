@@ -4,7 +4,7 @@
 @section('heading', 'Добавление товара')
 
 @section('content')
-    <form method="POST" action="{{ route('admin.products.store') }}" class="mx-auto max-w-2xl space-y-4">
+    <form method="POST" action="{{ route('admin.products.store') }}" enctype="multipart/form-data" class="mx-auto max-w-2xl space-y-4">
         @csrf
         <div>
             <label class="mb-1 block text-xs font-semibold uppercase tracking-wider">Название</label>
@@ -51,8 +51,16 @@
             <input name="image" class="w-full rounded border border-neutral-300 px-3 py-2" value="{{ old('image') }}">
         </div>
         <div>
+            <label class="mb-1 block text-xs font-semibold uppercase tracking-wider">или загрузите файл (основное)</label>
+            <input type="file" name="image_file" accept="image/*" class="w-full rounded border border-neutral-300 px-3 py-2">
+        </div>
+        <div>
             <label class="mb-1 block text-xs font-semibold uppercase tracking-wider">URL фото при наведении</label>
             <input name="secondary_image" class="w-full rounded border border-neutral-300 px-3 py-2" value="{{ old('secondary_image') }}">
+        </div>
+        <div>
+            <label class="mb-1 block text-xs font-semibold uppercase tracking-wider">или загрузите файл (hover)</label>
+            <input type="file" name="secondary_image_file" accept="image/*" class="w-full rounded border border-neutral-300 px-3 py-2">
         </div>
         <div>
             <label class="mb-1 block text-xs font-semibold uppercase tracking-wider">Описание</label>

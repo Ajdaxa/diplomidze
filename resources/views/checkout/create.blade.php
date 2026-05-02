@@ -2,7 +2,7 @@
 
 @section('content')
     <div class="mx-auto max-w-4xl">
-        <h1 class="mb-2 text-3xl font-light uppercase tracking-wide">Оформление</h1>
+        <h1 class="mb-2 text-3xl font-light uppercase tracking-wide">Оформлениe</h1>
         <p class="mb-10 text-sm text-neutral-500">Доставка и оплата через YooMoney</p>
 
         <div class="grid gap-8 lg:grid-cols-5">

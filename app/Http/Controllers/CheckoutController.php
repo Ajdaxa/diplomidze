@@ -94,6 +94,14 @@ class CheckoutController extends Controller
             return back()->withErrors(['cart' => 'Корзина пуста. Добавьте товары перед оформлением.']);
         }
 
+        foreach ($items as $item) {
+            if ($item['product']->stock < $item['quantity']) {
+                return back()->withErrors([
+                    'stock' => "Недостаточно товара \"{$item['product']->name}\" на складе. Обновите корзину.",
+                ]);
+            }
+        }
+
         $promocode = null;
         $total = (float) $items->sum('line_total');
 

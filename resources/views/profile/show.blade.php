@@ -1,6 +1,15 @@
 @extends('layouts.app')
 
 @section('content')
+    @php
+        $statusMap = [
+            'pending' => ['Ожидает оплату', 'bg-amber-50 text-amber-700 border-amber-200'],
+            'paid' => ['Оплачен', 'bg-sky-50 text-sky-700 border-sky-200'],
+            'in_delivery' => ['В доставке', 'bg-indigo-50 text-indigo-700 border-indigo-200'],
+            'arrived' => ['Курьер на месте', 'bg-violet-50 text-violet-700 border-violet-200'],
+            'delivered' => ['Доставлен', 'bg-emerald-50 text-emerald-700 border-emerald-200'],
+        ];
+    @endphp
     <div class="mx-auto max-w-3xl">
         <h1 class="mb-2 text-3xl font-semibold">Профиль</h1>
         <p class="mb-8 text-sm text-stone-500">Данные аккаунта и история заказов</p>
@@ -26,7 +35,10 @@
                         </div>
                         <div class="text-right">
                             <p class="text-sm font-semibold">{{ number_format($order->total_price, 2, '.', ' ') }} ₽</p>
-                            <p class="text-xs uppercase tracking-wider text-stone-500">{{ $order->status }}</p>
+                            @php
+                                [$label, $classes] = $statusMap[$order->status] ?? [strtoupper((string) $order->status), 'bg-stone-100 text-stone-700 border-stone-200'];
+                            @endphp
+                            <p class="inline-flex rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider {{ $classes }}">{{ $label }}</p>
                         </div>
                     </div>
                     @if($order->promocode)

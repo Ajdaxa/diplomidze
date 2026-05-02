@@ -10,17 +10,25 @@ use App\Http\Controllers\Auth\OtpAuthController;
 use App\Http\Controllers\CartController;
 use App\Http\Controllers\CheckoutController;
 use App\Http\Controllers\Courier\CourierOrderController;
+use App\Http\Controllers\FavoriteController;
 use App\Http\Controllers\ProductController as StoreProductController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\TelegramController;
 use App\Http\Controllers\Webhook\YooKassaWebhookController;
 use App\Models\Product;
+use App\Models\User;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
     $products = Product::query()->where('is_active', true)->latest()->get();
+    $favoriteIds = [];
+    if (auth()->check()) {
+        /** @var User $user */
+        $user = auth()->user();
+        $favoriteIds = $user->favoriteProducts()->pluck('products.id')->all();
+    }
 
-    return view('store.home', compact('products'));
+    return view('store.home', compact('products', 'favoriteIds'));
 })->name('home');
 
 Route::get('/products/{product:slug}', [StoreProductController::class, 'show'])->name('products.show');
@@ -32,14 +40,22 @@ Route::delete('/cart/{product}', [CartController::class, 'remove'])->name('cart.
 
 Route::prefix('auth/otp')->name('otp.')->group(function () {
     Route::get('/', [OtpAuthController::class, 'showForm'])->name('form');
+    Route::get('/password', [OtpAuthController::class, 'showPasswordForm'])->name('password.form');
+    Route::get('/register', [OtpAuthController::class, 'showRegisterForm'])->name('register.form');
+    Route::get('/telegram', [OtpAuthController::class, 'showTelegramForm'])->name('telegram.form');
     Route::post('/send', [OtpAuthController::class, 'sendCode'])->name('send');
     Route::post('/verify', [OtpAuthController::class, 'verifyCode'])->name('verify');
     Route::post('/password', [OtpAuthController::class, 'loginWithPassword'])->name('password');
+    Route::post('/register', [OtpAuthController::class, 'register'])->name('register');
+    Route::post('/telegram-autoreg', [OtpAuthController::class, 'telegramAutoRegister'])->name('telegram_autoreg');
 });
 
 Route::post('/logout', [OtpAuthController::class, 'logout'])->name('logout');
 
 Route::middleware('auth')->group(function () {
+    Route::get('/favorites', [FavoriteController::class, 'index'])->name('favorites.index');
+    Route::post('/favorites/{product}/toggle', [FavoriteController::class, 'toggle'])->name('favorites.toggle');
+
     Route::get('/profile', [ProfileController::class, 'show'])->name('profile.show');
 
     Route::get('/checkout', [CheckoutController::class, 'create'])->name('checkout.create');

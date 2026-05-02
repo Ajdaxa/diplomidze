@@ -3,7 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Models\Product;
-use Illuminate\Http\Request;
+use App\Models\User;
+use Illuminate\Support\Facades\Auth;
 
 class ProductController extends Controller
 {
@@ -11,6 +12,13 @@ class ProductController extends Controller
     {
         abort_unless($product->is_active, 404);
 
-        return view('store.product-show', compact('product'));
+        $isFavorite = false;
+        if (Auth::check()) {
+            /** @var User $user */
+            $user = Auth::user();
+            $isFavorite = $user->favoriteProducts()->where('product_id', $product->id)->exists();
+        }
+
+        return view('store.product-show', compact('product', 'isFavorite'));
     }
 }
