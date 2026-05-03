@@ -10,9 +10,12 @@ class TrustProxies extends Middleware
     /**
      * The trusted proxies for this application.
      *
+     * На shared-хостинге (Beget и др.) фронт — reverse-proxy: без доверия к
+     * X-Forwarded-Proto Laravel может считать запрос HTTP и ломать редиректы/URL.
+     *
      * @var array<int, string>|string|null
      */
-    protected $proxies;
+    protected $proxies = '*';
 
     /**
      * The headers that should be used to detect proxies.
