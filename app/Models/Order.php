@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Facades\DB;
 
 class Order extends Model
 {
@@ -45,5 +46,38 @@ class Order extends Model
     public function items(): HasMany
     {
         return $this->hasMany(OrderItem::class);
+    }
+
+    public function canCancel(): bool
+    {
+        return ! in_array($this->status, ['delivered', 'cancelled'], true);
+    }
+
+    /**
+     * Отмена незавершённого заказа: если остатки уже списаны (оплачен и дальше), возвращаем на склад.
+     */
+    public static function cancelUnfinished(self $order): void
+    {
+        DB::transaction(function () use ($order): void {
+            /** @var self|null $locked */
+            $locked = static::query()->with('items')->lockForUpdate()->find($order->id);
+            if (! $locked || ! $locked->canCancel()) {
+                return;
+            }
+
+            if (in_array($locked->status, ['paid', 'in_delivery', 'arrived'], true)) {
+                foreach ($locked->items as $item) {
+                    $product = Product::query()->lockForUpdate()->find($item->product_id);
+                    if ($product) {
+                        $product->increment('stock', (int) $item->quantity);
+                    }
+                }
+            }
+
+            $locked->update([
+                'status' => 'cancelled',
+                'courier_id' => null,
+            ]);
+        });
     }
 }

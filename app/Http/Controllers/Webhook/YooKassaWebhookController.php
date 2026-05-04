@@ -30,10 +30,14 @@ class YooKassaWebhookController extends Controller
             'ip' => $request->ip(),
         ]);
 
-        if ($event !== 'payment.succeeded' || ! $paymentId) {
+        $objectStatus = data_get($body, 'object.status');
+        $isSucceeded = $event === 'payment.succeeded' || $objectStatus === 'succeeded';
+
+        if (! $isSucceeded || ! $paymentId) {
             Log::channel('single')->info(self::LOG.' ignored', [
-                'reason' => 'not_payment_succeeded_or_no_payment_id',
+                'reason' => 'not_succeeded_or_no_payment_id',
                 'event' => $event,
+                'object_status' => $objectStatus,
                 'payment_id' => $paymentId,
             ]);
 

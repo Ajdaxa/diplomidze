@@ -19,8 +19,18 @@ class OrderController extends Controller
         return view('admin.orders.index', compact('orders', 'couriers'));
     }
 
+    public function show(Order $order)
+    {
+        $order->load(['user', 'courier', 'promocode', 'items.product']);
+        $couriers = User::role('courier')->get();
+
+        return view('admin.orders.show', compact('order', 'couriers'));
+    }
+
     public function assignCourier(Request $request, Order $order)
     {
+        abort_if($order->status === 'cancelled', 403);
+
         $validated = $request->validate([
             'courier_id' => ['required', 'exists:users,id'],
         ]);
@@ -36,8 +46,14 @@ class OrderController extends Controller
     public function updateStatus(Request $request, Order $order)
     {
         $validated = $request->validate([
-            'status' => ['required', 'in:pending,paid,in_delivery,arrived,delivered'],
+            'status' => ['required', 'in:pending,paid,in_delivery,arrived,delivered,cancelled'],
         ]);
+
+        if ($validated['status'] === 'cancelled') {
+            Order::cancelUnfinished($order);
+
+            return back()->with('status', 'Заказ отменён.');
+        }
 
         $this->applyStatusWithInventory($order, $validated['status']);
 

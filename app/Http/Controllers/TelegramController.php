@@ -3,27 +3,58 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
+use App\Services\TelegramService;
 use Illuminate\Http\Request;
-use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Log;
 
 class TelegramController extends Controller
 {
+    public function __construct(private readonly TelegramService $telegramService)
+    {
+    }
+
+    /**
+     * Webhook Telegram Bot API: тело запроса — объект Update (JSON).
+     * Поле message.text для личных чатов часто выглядит как "/start TOKEN" или "/start@YourBot TOKEN".
+     *
+     * Привязка идёт по полю users.telegram_link_token (не tg_link_token).
+     */
     public function handle(Request $request)
     {
-        $message = $request->input('message', []);
+        Log::info('telegram.webhook.raw', $request->all());
+
+        $message = $this->extractMessage($request);
+        if (! is_array($message)) {
+            Log::debug('telegram.webhook.no_message_block');
+
+            return response()->json(['ok' => true]);
+        }
+
         $text = trim((string) data_get($message, 'text', ''));
-        $chatId = (string) data_get($message, 'chat.id', '');
+        $chatId = data_get($message, 'chat.id');
 
-        if (! Str::startsWith($text, '/start')) {
+        if ($chatId === null || $chatId === '') {
+            Log::warning('telegram.webhook.missing_chat_id');
+
             return response()->json(['ok' => true]);
         }
 
-        $parts = preg_split('/\s+/', $text);
-        $token = $parts[1] ?? null;
+        $chatIdStr = (string) $chatId;
 
-        if (! $token || ! $chatId) {
+        // Допускаем /start, /start TOKEN, /start@BotName, /start@BotName TOKEN
+        if (! preg_match('#^/start(?:@\w+)?(?:\s+(.*))?$#isu', $text, $m)) {
             return response()->json(['ok' => true]);
         }
+
+        $payload = isset($m[1]) ? trim((string) $m[1]) : '';
+
+        if ($payload === '') {
+            $this->telegramService->replyWelcomeNeedSiteLink($chatIdStr);
+
+            return response()->json(['ok' => true]);
+        }
+
+        $token = $payload;
 
         $user = User::query()
             ->where('telegram_link_token', $token)
@@ -32,15 +63,43 @@ class TelegramController extends Controller
             ->first();
 
         if (! $user) {
+            Log::info('telegram.webhook.token_not_found_or_expired', [
+                'token_prefix' => substr($token, 0, 6).'…',
+            ]);
+            $this->telegramService->sendMessage(
+                $chatIdStr,
+                'Ссылка привязки устарела или уже использована. Запросите новую на сайте Дəб (вход через Telegram).',
+                'Telegram link invalid'
+            );
+
             return response()->json(['ok' => true]);
         }
 
         $user->update([
-            'telegram_chat_id' => $chatId,
+            'telegram_chat_id' => $chatIdStr,
             'telegram_link_token' => null,
             'telegram_link_token_expires_at' => null,
         ]);
 
+        $this->telegramService->sendMessage(
+            $chatIdStr,
+            '✅ Аккаунт привязан. Теперь можно входить по коду из Telegram.',
+            'Account linked'
+        );
+
         return response()->json(['ok' => true]);
+    }
+
+    /** @return array<string, mixed>|null */
+    private function extractMessage(Request $request): ?array
+    {
+        foreach (['message', 'edited_message'] as $key) {
+            $msg = $request->input($key);
+            if (is_array($msg) && isset($msg['chat'])) {
+                return $msg;
+            }
+        }
+
+        return null;
     }
 }

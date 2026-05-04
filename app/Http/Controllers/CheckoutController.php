@@ -5,11 +5,12 @@ namespace App\Http\Controllers;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Product;
-use App\Models\Promocode;
 use App\Services\DaDataService;
 use App\Services\YooKassaService;
+use App\Support\PromocodePricing;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 
 class CheckoutController extends Controller
 {
@@ -69,6 +70,29 @@ class CheckoutController extends Controller
         return view('checkout.create', compact('items', 'cartTotal'));
     }
 
+    public function previewTotals(Request $request)
+    {
+        $validated = $request->validate([
+            'promocode' => ['nullable', 'string', 'max:50'],
+        ]);
+
+        $items = $this->buildCartItems();
+        $subtotal = (float) $items->sum('line_total');
+        $preview = PromocodePricing::preview($subtotal, (string) ($validated['promocode'] ?? ''));
+
+        return response()->json([
+            'empty_cart' => $items->isEmpty(),
+            'subtotal' => round($preview['subtotal'], 2),
+            'discount' => round($preview['discount'], 2),
+            'total' => round($preview['total'], 2),
+            'promocode' => [
+                'valid' => $preview['promocode_valid'],
+                'code' => $preview['promocode_code'],
+                'message' => $preview['message'],
+            ],
+        ]);
+    }
+
     public function addressSuggestions(Request $request)
     {
         $request->validate([
@@ -102,19 +126,20 @@ class CheckoutController extends Controller
             }
         }
 
+        $subtotal = (float) $items->sum('line_total');
         $promocode = null;
-        $total = (float) $items->sum('line_total');
+        $total = $subtotal;
 
-        if (! empty($validated['promocode'])) {
-            $promocode = Promocode::query()
-                ->where('code', $validated['promocode'])
-                ->where('is_active', true)
-                ->first();
-
-            if ($promocode) {
-                $total = max(0, $this->applyPromocode($total, $promocode));
-                $promocode->increment('usage_count');
+        $rawPromo = trim((string) ($validated['promocode'] ?? ''));
+        if ($rawPromo !== '') {
+            $promocode = PromocodePricing::findActiveByCode($rawPromo);
+            if (! $promocode || ! PromocodePricing::redeemable($promocode)) {
+                return back()->withErrors([
+                    'promocode' => 'Промокод не найден, истёк или недоступен.',
+                ]);
             }
+            $total = max(0.0, $subtotal - PromocodePricing::discountAmount($subtotal, $promocode));
+            $promocode->increment('usage_count');
         }
 
         $order = Order::query()->create([
@@ -156,21 +181,40 @@ class CheckoutController extends Controller
     {
         abort_unless($order->user_id === Auth::id(), 403);
 
+        if ($order->status === 'pending' && $order->yookassa_payment_id) {
+            $payment = $this->yooKassaService->fetchPayment($order->yookassa_payment_id);
+            if (($payment['status'] ?? null) === 'succeeded') {
+                $this->markOrderPaid($order);
+                $order->refresh();
+            }
+        }
+
         return view('checkout.success', compact('order'));
     }
 
-    private function applyPromocode(float $total, Promocode $promocode): float
+    private function markOrderPaid(Order $order): void
     {
-        if ($promocode->type === 'percent') {
-            $discount = $total * ((float) $promocode->value / 100);
-        } else {
-            $discount = (float) $promocode->value;
-        }
+        DB::transaction(function () use ($order): void {
+            /** @var Order|null $locked */
+            $locked = Order::query()->with('items')->lockForUpdate()->find($order->id);
+            if (! $locked || $locked->status !== 'pending') {
+                return;
+            }
 
-        if ($promocode->max_discount) {
-            $discount = min($discount, (float) $promocode->max_discount);
-        }
+            foreach ($locked->items as $item) {
+                $product = Product::query()->lockForUpdate()->find($item->product_id);
+                if (! $product || $product->stock < 1) {
+                    continue;
+                }
 
-        return $total - $discount;
+                $decreaseBy = min($product->stock, (int) $item->quantity);
+                $product->decrement('stock', $decreaseBy);
+            }
+
+            $locked->update([
+                'status' => 'paid',
+                'paid_at' => now(),
+            ]);
+        });
     }
 }

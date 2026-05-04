@@ -14,16 +14,31 @@ class TelegramService
     public function __construct()
     {
         $token = config('services.telegram.bot_token');
-        $this->baseUrl = "https://api.telegram.org/bot{$token}/";
+        $this->baseUrl = $token ? "https://api.telegram.org/bot{$token}/" : '';
+    }
+
+    /**
+     * Ответ пользователю, который нажал /start без deep-link токена с сайта.
+     */
+    public function replyWelcomeNeedSiteLink(string $chatId): void
+    {
+        $this->sendMessage(
+            $chatId,
+            'Чтобы привязать аккаунт, откройте сайт Дəб → вход через Telegram и следуйте ссылке с параметром <code>/start</code> (кнопка в браузере откроет бота уже с токеном).',
+            'Telegram welcome'
+        );
     }
 
     public function sendMessage(string $chatId, string $message, string $action = 'System Notification'): void
     {
-        if (! config('services.telegram.bot_token') || ! $chatId) {
+        $token = config('services.telegram.bot_token');
+        if (! $token || ! $chatId) {
+            Log::warning('Telegram sendMessage skipped: missing bot_token or chat_id');
+
             return;
         }
 
-        $response = Http::post($this->baseUrl.'sendMessage', [
+        $response = Http::timeout(15)->post($this->baseUrl.'sendMessage', [
             'chat_id' => $chatId,
             'text' => $message,
             'parse_mode' => 'HTML',

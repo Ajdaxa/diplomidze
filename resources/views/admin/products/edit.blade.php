@@ -12,9 +12,9 @@
         </div>
         <div>
             <label class="mb-1 block text-xs font-semibold uppercase tracking-wider">Категория</label>
-            <select name="category" class="w-full rounded border border-neutral-300 px-3 py-2" required>
-                @foreach($categories as $key => $label)
-                    <option value="{{ $key }}" @selected(old('category', $product->category) === $key)>{{ $label }}</option>
+            <select name="category_id" class="w-full rounded border border-neutral-300 px-3 py-2" required>
+                @foreach($categories as $cat)
+                    <option value="{{ $cat->id }}" @selected((int) old('category_id', $product->category_id) === $cat->id)>{{ $cat->name }}</option>
                 @endforeach
             </select>
         </div>
@@ -32,14 +32,18 @@
             <label class="mb-1 block text-xs font-semibold uppercase tracking-wider">Размеры (через запятую)</label>
             <input name="available_sizes" class="w-full rounded border border-neutral-300 px-3 py-2" value="{{ old('available_sizes', is_array($product->available_sizes) ? implode(', ', $product->available_sizes) : '') }}">
         </div>
-        <div>
-            <label class="mb-1 block text-xs font-semibold uppercase tracking-wider">Цвета для витрины</label>
-            <input name="display_colors" class="w-full rounded border border-neutral-300 px-3 py-2" value="{{ old('display_colors', is_array($product->display_colors) ? implode(', ', $product->display_colors) : '') }}">
-        </div>
         <div class="grid grid-cols-2 gap-4">
             <div>
                 <label class="mb-1 block text-xs font-semibold uppercase tracking-wider">Цвет (фильтр)</label>
                 <input name="color" class="w-full rounded border border-neutral-300 px-3 py-2" value="{{ old('color', $product->color) }}">
+            </div>
+            <div>
+                <label class="mb-1 block text-xs font-semibold uppercase tracking-wider">Пол</label>
+                <select name="gender" class="w-full rounded border border-neutral-300 px-3 py-2">
+                    <option value="unisex" @selected(old('gender', $product->gender ?? 'unisex') === 'unisex')>Унисекс</option>
+                    <option value="female" @selected(old('gender', $product->gender) === 'female')>Женский</option>
+                    <option value="male" @selected(old('gender', $product->gender) === 'male')>Мужской</option>
+                </select>
             </div>
             <div>
                 <label class="mb-1 block text-xs font-semibold uppercase tracking-wider">Размер по умолчанию</label>
@@ -65,6 +69,10 @@
         <div>
             <label class="mb-1 block text-xs font-semibold uppercase tracking-wider">Описание</label>
             <textarea name="description" rows="4" class="w-full rounded border border-neutral-300 px-3 py-2">{{ old('description', $product->description) }}</textarea>
+        </div>
+        <div>
+            <label class="mb-1 block text-xs font-semibold uppercase tracking-wider">Состав</label>
+            <textarea name="composition" rows="3" class="w-full rounded border border-neutral-300 px-3 py-2" placeholder="Напр.: 95% хлопок, 5% эластан">{{ old('composition', $product->composition) }}</textarea>
         </div>
         <div class="flex gap-4 text-sm">
             <label class="flex items-center gap-2"><input type="checkbox" name="is_new_collection" value="1" @checked(old('is_new_collection', $product->is_new_collection))> New</label>

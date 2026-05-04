@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Models\Category;
 use App\Models\Product;
 use App\Models\User;
 use Illuminate\Database\Seeder;
@@ -33,10 +34,13 @@ class RolesAndUsersSeeder extends Seeder
             $user->syncRoles([$role]);
         }
 
+        $clothesCategoryId = Category::query()->where('slug', 'clothes')->value('id');
+
         Product::query()->updateOrCreate(
             ['name' => 'Silk Midi Dress'],
             [
                 'slug' => 'silk-midi-dress',
+                'category_id' => $clothesCategoryId,
                 'category' => 'clothes',
                 'description' => 'Платье из шелка в минималистичном стиле.',
                 'price' => 7590,
@@ -44,9 +48,9 @@ class RolesAndUsersSeeder extends Seeder
                 'image' => 'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?auto=format&fit=crop&w=900&q=80',
                 'secondary_image' => 'https://images.unsplash.com/photo-1485230895905-ec40ba36b9bc?auto=format&fit=crop&w=900&q=80',
                 'color' => 'black',
+                'gender' => 'female',
                 'size' => 'M',
                 'available_sizes' => ['XS', 'S', 'M', 'L', 'XL'],
-                'display_colors' => ['#000000', '#d4d4d4', '#a3a3a3'],
                 'is_new_collection' => true,
                 'is_limited_edition' => false,
                 'is_active' => true,
@@ -57,6 +61,7 @@ class RolesAndUsersSeeder extends Seeder
             ['name' => 'Premium Wool Jacket'],
             [
                 'slug' => 'premium-wool-jacket',
+                'category_id' => $clothesCategoryId,
                 'category' => 'clothes',
                 'description' => 'Структурный жакет из премиальной шерсти.',
                 'price' => 11490,
@@ -64,9 +69,9 @@ class RolesAndUsersSeeder extends Seeder
                 'image' => 'https://images.unsplash.com/photo-1495385794356-15371f348c31?auto=format&fit=crop&w=900&q=80',
                 'secondary_image' => 'https://images.unsplash.com/photo-1529139574466-a303027c1d8b?auto=format&fit=crop&w=900&q=80',
                 'color' => 'wine',
+                'gender' => 'unisex',
                 'size' => 'S',
                 'available_sizes' => ['S', 'M', 'L'],
-                'display_colors' => ['#5b1f2a', '#292524', '#78716c'],
                 'is_new_collection' => false,
                 'is_limited_edition' => true,
                 'is_active' => true,

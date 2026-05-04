@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -22,16 +23,18 @@ class Product extends Model
     protected $fillable = [
         'name',
         'slug',
+        'category_id',
         'category',
         'description',
+        'composition',
         'price',
         'stock',
         'image',
         'secondary_image',
         'color',
+        'gender',
         'size',
         'available_sizes',
-        'display_colors',
         'is_new_collection',
         'is_limited_edition',
         'is_active',
@@ -42,7 +45,6 @@ class Product extends Model
         'is_new_collection' => 'bool',
         'is_limited_edition' => 'bool',
         'available_sizes' => 'array',
-        'display_colors' => 'array',
     ];
 
     public function auditLogs(): HasMany
@@ -54,6 +56,21 @@ class Product extends Model
     public function favoritedByUsers(): BelongsToMany
     {
         return $this->belongsToMany(User::class, 'favorite_products')->withTimestamps();
+    }
+
+    public function categoryModel(): BelongsTo
+    {
+        return $this->belongsTo(Category::class, 'category_id');
+    }
+
+    /** Slug категории для фильтров на витрине (совместимость со старым полем category). */
+    public function getCategorySlugAttribute(): string
+    {
+        if ($this->relationLoaded('categoryModel') && $this->categoryModel) {
+            return (string) $this->categoryModel->slug;
+        }
+
+        return (string) ($this->attributes['category'] ?? 'clothes');
     }
 
     /** @return list<string> */
@@ -75,10 +92,6 @@ class Product extends Model
     /** @return list<string> */
     public function colorsForCard(): array
     {
-        if (is_array($this->display_colors) && $this->display_colors !== []) {
-            return array_values(array_map('strval', $this->display_colors));
-        }
-
         if (! empty($this->color)) {
             return [(string) $this->color];
         }

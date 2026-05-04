@@ -10,6 +10,10 @@
             <h2 class="text-sm font-semibold uppercase tracking-wider">Аналитика</h2>
             <p class="mt-2 text-xs text-neutral-500">Графики продаж, промокоды, курьеры</p>
         </a>
+        <a href="{{ route('admin.categories.index') }}" class="group rounded-xl border border-neutral-200 bg-white p-6 shadow-sm transition hover:border-black">
+            <h2 class="text-sm font-semibold uppercase tracking-wider">Категории</h2>
+            <p class="mt-2 text-xs text-neutral-500">Разделы витрины</p>
+        </a>
         <a href="{{ route('admin.products.index') }}" class="group rounded-xl border border-neutral-200 bg-white p-6 shadow-sm transition hover:border-black">
             <h2 class="text-sm font-semibold uppercase tracking-wider">Каталог</h2>
             <p class="mt-2 text-xs text-neutral-500">Список товаров, редактирование</p>

@@ -9,7 +9,7 @@ use Illuminate\Support\Str;
 
 class YooKassaService
 {
-    public function createPayment(Order $order): ?array
+    private function credentials(): ?array
     {
         $shopId = config('services.yookassa.shop_id');
         $secret = config('services.yookassa.secret_key');
@@ -17,6 +17,17 @@ class YooKassaService
         if (! $shopId || ! $secret) {
             return null;
         }
+
+        return [$shopId, $secret];
+    }
+
+    public function createPayment(Order $order): ?array
+    {
+        $credentials = $this->credentials();
+        if (! $credentials) {
+            return null;
+        }
+        [$shopId, $secret] = $credentials;
 
         $response = Http::withBasicAuth($shopId, $secret)
             ->withHeaders(['Idempotence-Key' => (string) Str::uuid()])
@@ -41,6 +52,30 @@ class YooKassaService
                 'status' => $response->status(),
                 'body' => $response->json(),
                 'order_id' => $order->id,
+            ]);
+
+            return null;
+        }
+
+        return $response->json();
+    }
+
+    public function fetchPayment(string $paymentId): ?array
+    {
+        $credentials = $this->credentials();
+        if (! $credentials) {
+            return null;
+        }
+        [$shopId, $secret] = $credentials;
+
+        $response = Http::withBasicAuth($shopId, $secret)
+            ->get('https://api.yookassa.ru/v3/payments/'.$paymentId);
+
+        if ($response->failed()) {
+            Log::warning('YooKassa fetchPayment failed', [
+                'status' => $response->status(),
+                'payment_id' => $paymentId,
+                'body' => $response->json(),
             ]);
 
             return null;

@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Admin\AdminHubController;
+use App\Http\Controllers\Admin\CategoryController;
 use App\Http\Controllers\Admin\CourierController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\OrderController;
@@ -10,30 +11,22 @@ use App\Http\Controllers\Auth\OtpAuthController;
 use App\Http\Controllers\CartController;
 use App\Http\Controllers\CheckoutController;
 use App\Http\Controllers\Courier\CourierOrderController;
+use App\Http\Controllers\OrderCancelController;
 use App\Http\Controllers\FavoriteController;
 use App\Http\Controllers\ProductController as StoreProductController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\StorefrontController;
 use App\Http\Controllers\TelegramController;
 use App\Http\Controllers\Webhook\YooKassaWebhookController;
-use App\Models\Product;
-use App\Models\User;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/', function () {
-    $products = Product::query()->where('is_active', true)->latest()->get();
-    $favoriteIds = [];
-    if (auth()->check()) {
-        /** @var User $user */
-        $user = auth()->user();
-        $favoriteIds = $user->favoriteProducts()->pluck('products.id')->all();
-    }
-
-    return view('store.home', compact('products', 'favoriteIds'));
-})->name('home');
+Route::get('/', [StorefrontController::class, 'home'])->name('home');
+Route::get('/catalog', [StorefrontController::class, 'catalog'])->name('catalog');
 
 Route::get('/products/{product:slug}', [StoreProductController::class, 'show'])->name('products.show');
 
 Route::get('/cart', [CartController::class, 'index'])->name('cart.index');
+Route::post('/cart/preview-totals', [CheckoutController::class, 'previewTotals'])->name('cart.preview-totals');
 Route::post('/cart/{product}', [CartController::class, 'add'])->name('cart.add');
 Route::patch('/cart/{product}', [CartController::class, 'update'])->name('cart.update');
 Route::delete('/cart/{product}', [CartController::class, 'remove'])->name('cart.remove');
@@ -57,6 +50,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/favorites/{product}/toggle', [FavoriteController::class, 'toggle'])->name('favorites.toggle');
 
     Route::get('/profile', [ProfileController::class, 'show'])->name('profile.show');
+    Route::post('/orders/{order}/cancel', [OrderCancelController::class, 'store'])->name('orders.cancel');
 
     Route::get('/checkout', [CheckoutController::class, 'create'])->name('checkout.create');
     Route::post('/checkout', [CheckoutController::class, 'store'])->name('checkout.store');
@@ -77,6 +71,12 @@ Route::middleware('auth')->group(function () {
         Route::patch('/promocodes/{promocode}', [PromocodeController::class, 'update'])->name('promocodes.update');
         Route::delete('/promocodes/{promocode}', [PromocodeController::class, 'destroy'])->name('promocodes.destroy');
         Route::post('/promocodes/{promocode}/broadcast', [PromocodeController::class, 'broadcastPromo'])->name('promocodes.broadcast');
+        Route::get('/categories', [CategoryController::class, 'index'])->name('categories.index');
+        Route::get('/categories/create', [CategoryController::class, 'create'])->name('categories.create');
+        Route::post('/categories', [CategoryController::class, 'store'])->name('categories.store');
+        Route::get('/categories/{category}/edit', [CategoryController::class, 'edit'])->name('categories.edit');
+        Route::patch('/categories/{category}', [CategoryController::class, 'update'])->name('categories.update');
+        Route::delete('/categories/{category}', [CategoryController::class, 'destroy'])->name('categories.destroy');
         Route::get('/products', [ProductController::class, 'index'])->name('products.index');
         Route::get('/products/create', [ProductController::class, 'create'])->name('products.create');
         Route::post('/products', [ProductController::class, 'store'])->name('products.store');
@@ -88,10 +88,12 @@ Route::middleware('auth')->group(function () {
         Route::patch('/couriers/{courier}', [CourierController::class, 'update'])->name('couriers.update');
         Route::delete('/couriers/{courier}', [CourierController::class, 'destroy'])->name('couriers.destroy');
         Route::get('/orders', [OrderController::class, 'index'])->name('orders.index');
+        Route::get('/orders/{order}', [OrderController::class, 'show'])->name('orders.show');
         Route::patch('/orders/{order}/assign-courier', [OrderController::class, 'assignCourier'])->name('orders.assign-courier');
         Route::patch('/orders/{order}/status', [OrderController::class, 'updateStatus'])->name('orders.status');
     });
 });
 
 Route::post('/webhooks/yookassa', YooKassaWebhookController::class)->name('webhooks.yookassa');
+// Telegram Bot API: webhook шлёт POST JSON (Update). CSRF исключён в VerifyCsrfToken.
 Route::post('/webhook/telegram', [TelegramController::class, 'handle'])->name('webhook.telegram');

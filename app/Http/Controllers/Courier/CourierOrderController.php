@@ -16,6 +16,7 @@ class CourierOrderController extends Controller
     {
         $orders = Order::query()
             ->where('courier_id', Auth::id())
+            ->with(['items.product', 'user'])
             ->latest()
             ->get();
 
@@ -25,6 +26,7 @@ class CourierOrderController extends Controller
     public function arrived(Order $order, TelegramService $telegramService)
     {
         $this->authorizeCourierOrder($order);
+        $this->abortIfTerminal($order);
 
         $order->update(['status' => 'arrived']);
 
@@ -38,6 +40,7 @@ class CourierOrderController extends Controller
     public function delivered(Order $order, TelegramService $telegramService)
     {
         $this->authorizeCourierOrder($order);
+        $this->abortIfTerminal($order);
 
         DB::transaction(function () use ($order): void {
             /** @var Order|null $locked */
@@ -69,5 +72,10 @@ class CourierOrderController extends Controller
     private function authorizeCourierOrder(Order $order): void
     {
         abort_unless($order->courier_id === Auth::id(), 403);
+    }
+
+    private function abortIfTerminal(Order $order): void
+    {
+        abort_if(in_array($order->status, ['cancelled', 'delivered'], true), 403);
     }
 }

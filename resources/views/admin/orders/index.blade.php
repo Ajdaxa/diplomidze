@@ -9,11 +9,14 @@
             <div class="rounded-xl border border-stone-200 bg-white p-4">
                 <div class="flex flex-wrap items-center justify-between gap-3">
                     <div>
-                        <p class="font-medium">Заказ #{{ $order->id }} — {{ number_format($order->total_price, 2, '.', ' ') }} ₽</p>
-                        <p class="text-sm text-stone-500">Клиент: {{ $order->user?->name }} • Статус: {{ $order->status }}</p>
+                        <p class="font-medium">
+                            <a href="{{ route('admin.orders.show', $order) }}" class="underline decoration-stone-300 underline-offset-2 hover:decoration-black">Заказ #{{ $order->id }}</a>
+                            — {{ number_format($order->total_price, 2, '.', ' ') }} ₽
+                        </p>
+                        <p class="text-sm text-stone-500">Клиент: {{ $order->user?->name }} • Статус: {{ \App\Support\OrderStatus::label($order->status) }}</p>
                     </div>
-                    <div class="flex gap-2">
-                        <form method="POST" action="{{ route('admin.orders.assign-courier', $order) }}">
+                    <div class="flex min-w-0 flex-wrap gap-2 overflow-x-auto pb-1 sm:flex-nowrap sm:pb-0">
+                        <form method="POST" action="{{ route('admin.orders.assign-courier', $order) }}" class="flex min-w-0 flex-wrap items-center gap-2">
                             @csrf @method('PATCH')
                             <select name="courier_id" class="rounded border border-stone-300 px-2 py-1 text-sm">
                                 @foreach($couriers as $courier)
@@ -22,11 +25,11 @@
                             </select>
                             <button class="rounded border border-stone-300 px-3 py-1 text-sm">Назначить</button>
                         </form>
-                        <form method="POST" action="{{ route('admin.orders.status', $order) }}">
+                        <form method="POST" action="{{ route('admin.orders.status', $order) }}" class="flex min-w-0 flex-wrap items-center gap-2">
                             @csrf @method('PATCH')
                             <select name="status" class="rounded border border-stone-300 px-2 py-1 text-sm">
-                                @foreach(['pending','paid','in_delivery','arrived','delivered'] as $status)
-                                    <option value="{{ $status }}" @selected($order->status === $status)>{{ $status }}</option>
+                                @foreach(\App\Support\OrderStatus::LABELS as $status => $statusLabel)
+                                    <option value="{{ $status }}" @selected($order->status === $status)>{{ $statusLabel }}</option>
                                 @endforeach
                             </select>
                             <button class="rounded border border-stone-300 px-3 py-1 text-sm">Обновить</button>

@@ -3,12 +3,31 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\Category;
 use App\Models\Product;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 
 class ProductController extends Controller
 {
+    private function categoriesCollection()
+    {
+        $categories = Category::query()->orderBy('sort_order')->orderBy('name')->get();
+        if ($categories->isNotEmpty()) {
+            return $categories;
+        }
+
+        $sort = 0;
+        foreach (Product::CATEGORIES as $slug => $name) {
+            Category::query()->firstOrCreate(
+                ['slug' => $slug],
+                ['name' => $name, 'sort_order' => $sort++, 'is_active' => true]
+            );
+        }
+
+        return Category::query()->orderBy('sort_order')->orderBy('name')->get();
+    }
+
     public function index()
     {
         $products = Product::query()->latest()->paginate(24);
@@ -18,9 +37,9 @@ class ProductController extends Controller
 
     public function create()
     {
-        return view('admin.products.create', [
-            'categories' => Product::CATEGORIES,
-        ]);
+        $categories = $this->categoriesCollection();
+
+        return view('admin.products.create', compact('categories'));
     }
 
     public function store(Request $request)
@@ -34,10 +53,9 @@ class ProductController extends Controller
 
     public function edit(Product $product)
     {
-        return view('admin.products.edit', [
-            'product' => $product,
-            'categories' => Product::CATEGORIES,
-        ]);
+        $categories = $this->categoriesCollection();
+
+        return view('admin.products.edit', compact('product', 'categories'));
     }
 
     public function update(Request $request, Product $product)
@@ -63,24 +81,24 @@ class ProductController extends Controller
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string'],
+            'composition' => ['nullable', 'string', 'max:2000'],
             'price' => ['required', 'numeric', 'min:1'],
             'stock' => ['required', 'integer', 'min:0'],
-            'category' => ['required', 'string', 'in:'.implode(',', array_keys(Product::CATEGORIES))],
+            'category_id' => ['required', 'exists:categories,id'],
             'image' => ['nullable', 'url'],
             'secondary_image' => ['nullable', 'url'],
             'image_file' => ['nullable', 'image', 'max:5120'],
             'secondary_image_file' => ['nullable', 'image', 'max:5120'],
             'color' => ['nullable', 'string', 'max:50'],
+            'gender' => ['nullable', 'in:male,female,unisex'],
             'size' => ['nullable', 'string', 'max:20'],
             'available_sizes' => ['nullable', 'string', 'max:500'],
-            'display_colors' => ['nullable', 'string', 'max:500'],
             'is_new_collection' => ['nullable', 'boolean'],
             'is_limited_edition' => ['nullable', 'boolean'],
             'is_active' => ['nullable', 'boolean'],
         ]);
 
         $sizes = $this->parseList($validated['available_sizes'] ?? '');
-        $colors = $this->parseList($validated['display_colors'] ?? '');
         $imageUrl = $validated['image'] ?? $product->image;
         $secondaryImageUrl = $validated['secondary_image'] ?? $product->secondary_image;
 
@@ -95,23 +113,26 @@ class ProductController extends Controller
         }
 
         $slugBase = Str::slug($validated['name']);
+        $category = Category::query()->findOrFail((int) $validated['category_id']);
 
         $product->fill([
             'name' => $validated['name'],
             'slug' => $product->exists ? ($slugBase.'-'.$product->id) : ($slugBase.'-'.Str::lower(Str::random(5))),
             'description' => $validated['description'] ?? null,
+            'composition' => $validated['composition'] ?? null,
             'price' => $validated['price'],
             'stock' => $validated['stock'],
-            'category' => $validated['category'],
+            'category_id' => $category->id,
+            'category' => $category->slug,
             'image' => $imageUrl,
             'secondary_image' => $secondaryImageUrl,
             'color' => $validated['color'] ?? null,
+            'gender' => $validated['gender'] ?? 'unisex',
             'size' => $validated['size'] ?? null,
             'available_sizes' => $sizes === [] ? null : $sizes,
-            'display_colors' => $colors === [] ? null : $colors,
             'is_new_collection' => $request->boolean('is_new_collection'),
             'is_limited_edition' => $request->boolean('is_limited_edition'),
-            'is_active' => $request->boolean('is_active', true),
+            'is_active' => $request->boolean('is_active'),
         ]);
         $product->save();
         $product->update(['slug' => $slugBase.'-'.$product->id]);
