@@ -5,7 +5,9 @@ namespace App\Http\Controllers;
 use App\Models\User;
 use App\Services\TelegramService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 
 class TelegramController extends Controller
 {
@@ -81,9 +83,14 @@ class TelegramController extends Controller
             'telegram_link_token_expires_at' => null,
         ]);
 
+        $loginToken = Str::random(48);
+        Cache::put('tg_login:'.$loginToken, $user->id, now()->addMinutes(20));
+
+        $loginUrl = route('otp.telegram.complete', ['token' => $loginToken]);
+
         $this->telegramService->sendMessage(
             $chatIdStr,
-            '✅ Аккаунт привязан. Теперь можно входить по коду из Telegram.',
+            "✅ Telegram привязан.\n\nНажмите, чтобы войти на сайт:\n{$loginUrl}\n\nСсылка действует 20 минут.",
             'Account linked'
         );
 

@@ -1,9 +1,10 @@
 @extends('layouts.app')
 
+@section('title', 'Оформление заказа')
+
 @section('content')
     <div class="mx-auto w-full max-w-5xl">
-        <h1 class="mb-2 text-[clamp(1.5rem,4vw,1.875rem)] font-light uppercase tracking-wide">Оформлениe</h1>
-        <p class="mb-8 max-w-prose text-sm text-neutral-500 sm:mb-10 sm:text-[0.9375rem]">Доставка и оплата через YooMoney</p>
+        <x-page-heading title="Оформление" lede="Доставка и оплата через YooMoney" />
 
         <div class="grid gap-8 lg:grid-cols-5 lg:gap-10">
             <div class="order-2 lg:order-1 lg:col-span-2">
@@ -44,19 +45,15 @@
                 <form method="POST" action="{{ route('checkout.store') }}" class="space-y-6 border border-neutral-200 bg-white p-4 sm:p-6 lg:p-8">
                     @csrf
                     <div>
-                        <label class="mb-2 block text-xs font-semibold uppercase tracking-wider text-neutral-700">Адрес доставки</label>
-                        <input id="address-input" type="text" autocomplete="off" class="w-full border border-neutral-300 px-4 py-3 text-sm focus:border-black focus:outline-none" placeholder="Начните вводить адрес">
+                        <div class="relative">
+                            <input id="address-input" type="text" autocomplete="off" placeholder=" " class="peer block w-full rounded-xl border border-neutral-200 bg-white px-3.5 pb-2.5 pt-5 text-sm text-neutral-900 shadow-sm outline-none transition-[border-color,box-shadow] duration-200 ease-out placeholder:text-transparent focus:border-black focus:ring-2 focus:ring-black/[0.06]">
+                            <label for="address-input" class="pointer-events-none absolute left-3.5 top-1/2 origin-left -translate-y-1/2 text-[15px] text-neutral-500 transition-all duration-200 ease-out peer-focus:top-2 peer-focus:translate-y-0 peer-focus:text-[11px] peer-focus:font-medium peer-focus:tracking-wide peer-focus:text-neutral-700 peer-[:not(:placeholder-shown)]:top-2 peer-[:not(:placeholder-shown)]:translate-y-0 peer-[:not(:placeholder-shown)]:text-[11px] peer-[:not(:placeholder-shown)]:font-medium peer-[:not(:placeholder-shown)]:tracking-wide peer-[:not(:placeholder-shown)]:text-neutral-700">Адрес доставки</label>
+                        </div>
                         <input type="hidden" name="address[full]" id="address-full">
                         <div id="address-suggestions" class="mt-2 max-h-48 space-y-1 overflow-y-auto"></div>
                     </div>
-                    <div>
-                        <label class="mb-2 block text-xs font-semibold uppercase tracking-wider text-neutral-700">Промокод</label>
-                        <input id="checkout-promocode" type="text" name="promocode" value="{{ old('promocode') }}" class="w-full border border-neutral-300 px-4 py-3 text-sm focus:border-black focus:outline-none @error('promocode') border-rose-400 @enderror" placeholder="Необязательно" autocomplete="off">
-                        @error('promocode')
-                            <p class="mt-2 text-xs text-rose-600">{{ $message }}</p>
-                        @enderror
-                    </div>
-                    <button type="submit" class="w-full bg-black py-4 text-xs font-semibold uppercase tracking-[0.25em] text-white transition hover:bg-neutral-800">Перейти к оплате</button>
+                    <x-floating-input id="checkout-promocode" name="promocode" label="Промокод (необязательно)" :value="old('promocode')" autocomplete="off" />
+                    <button type="submit" class="w-full rounded-xl bg-black py-4 text-xs font-semibold uppercase tracking-[0.25em] text-white transition hover:bg-neutral-800">Перейти к оплате</button>
                 </form>
             </div>
         </div>

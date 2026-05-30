@@ -7,6 +7,11 @@
     <form method="POST" action="{{ route('admin.products.update', $product) }}" enctype="multipart/form-data" class="mx-auto max-w-2xl space-y-4">
         @csrf @method('PATCH')
         <div>
+            <label class="mb-1 block text-xs font-semibold uppercase tracking-wider">Артикул</label>
+            <input type="text" readonly class="w-full cursor-default rounded border border-neutral-200 bg-neutral-50 px-3 py-2 font-mono text-sm text-neutral-700" value="{{ $product->sku ?? 'Будет сгенерирован при сохранении' }}">
+            <p class="mt-1 text-[11px] text-neutral-500">Генерируется автоматически, редактирование не требуется.</p>
+        </div>
+        <div>
             <label class="mb-1 block text-xs font-semibold uppercase tracking-wider">Название</label>
             <input name="name" class="w-full rounded border border-neutral-300 px-3 py-2" required value="{{ old('name', $product->name) }}">
         </div>
@@ -75,8 +80,8 @@
             <textarea name="composition" rows="3" class="w-full rounded border border-neutral-300 px-3 py-2" placeholder="Напр.: 95% хлопок, 5% эластан">{{ old('composition', $product->composition) }}</textarea>
         </div>
         <div class="flex gap-4 text-sm">
-            <label class="flex items-center gap-2"><input type="checkbox" name="is_new_collection" value="1" @checked(old('is_new_collection', $product->is_new_collection))> New</label>
-            <label class="flex items-center gap-2"><input type="checkbox" name="is_limited_edition" value="1" @checked(old('is_limited_edition', $product->is_limited_edition))> Limited</label>
+            <label class="flex items-center gap-2"><input type="checkbox" name="is_new_collection" value="1" @checked(old('is_new_collection', $product->is_new_collection))> Новинка</label>
+            <label class="flex items-center gap-2"><input type="checkbox" name="is_limited_edition" value="1" @checked(old('is_limited_edition', $product->is_limited_edition))> Лимитированная серия</label>
             <label class="flex items-center gap-2"><input type="checkbox" name="is_active" value="1" @checked(old('is_active', $product->is_active))> Активен</label>
         </div>
         <div class="flex gap-4">

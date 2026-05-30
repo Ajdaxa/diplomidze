@@ -37,6 +37,11 @@
                 </ul>
             </div>
         </div>
-        <p class="mt-10 border-t border-neutral-200 pt-6 text-center text-xs text-neutral-500">© {{ date('Y') }} Дəб. Все права защищены.</p>
+        <div class="mt-10 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 border-t border-neutral-200 pt-8 text-[10px] font-semibold uppercase tracking-[0.2em] text-neutral-500 sm:gap-x-10">
+            <span class="inline-flex items-center gap-1.5">Безопасная оплата</span>
+            <span class="inline-flex items-center gap-1.5">Курьерская доставка</span>
+            <span class="inline-flex items-center gap-1.5">Поддержка 7/7</span>
+        </div>
+        <p class="mt-6 text-center text-xs text-neutral-500">© {{ date('Y') }} Дəб. Все права защищены.</p>
     </div>
 </footer>

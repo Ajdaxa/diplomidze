@@ -30,7 +30,7 @@ class ProductController extends Controller
 
     public function index()
     {
-        $products = Product::query()->latest()->paginate(24);
+        $products = Product::query()->with('categoryModel')->latest()->paginate(24);
 
         return view('admin.products.index', compact('products'));
     }
@@ -136,6 +136,11 @@ class ProductController extends Controller
         ]);
         $product->save();
         $product->update(['slug' => $slugBase.'-'.$product->id]);
+
+        if (! filled($product->sku)) {
+            $product->load('categoryModel');
+            $product->updateQuietly(['sku' => Product::generateSku($product)]);
+        }
 
         return $product->fresh();
     }

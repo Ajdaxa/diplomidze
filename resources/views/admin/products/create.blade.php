@@ -6,6 +6,7 @@
 @section('content')
     <form method="POST" action="{{ route('admin.products.store') }}" enctype="multipart/form-data" class="mx-auto max-w-2xl space-y-4">
         @csrf
+        <p class="rounded-lg border border-neutral-200 bg-neutral-50 px-3 py-2 text-xs text-neutral-600">Артикул (SKU) будет присвоен автоматически после сохранения, формат: <span class="font-mono">DAB-XXX-000000</span>.</p>
         <div>
             <label class="mb-1 block text-xs font-semibold uppercase tracking-wider">Название</label>
             <input name="name" class="w-full rounded border border-neutral-300 px-3 py-2" required value="{{ old('name') }}">
@@ -75,8 +76,8 @@
             <textarea name="composition" rows="3" class="w-full rounded border border-neutral-300 px-3 py-2" placeholder="Напр.: 95% хлопок, 5% эластан">{{ old('composition') }}</textarea>
         </div>
         <div class="flex gap-4 text-sm">
-            <label class="flex items-center gap-2"><input type="checkbox" name="is_new_collection" value="1" @checked(old('is_new_collection'))> New Collection</label>
-            <label class="flex items-center gap-2"><input type="checkbox" name="is_limited_edition" value="1" @checked(old('is_limited_edition'))> Limited</label>
+            <label class="flex items-center gap-2"><input type="checkbox" name="is_new_collection" value="1" @checked(old('is_new_collection'))> Новинка</label>
+            <label class="flex items-center gap-2"><input type="checkbox" name="is_limited_edition" value="1" @checked(old('is_limited_edition'))> Лимитированная серия</label>
             <label class="flex items-center gap-2"><input type="checkbox" name="is_active" value="1" @checked(old('is_active', true))> Активен</label>
         </div>
         <button type="submit" class="rounded bg-black px-6 py-3 text-sm font-medium uppercase tracking-wider text-white">Создать</button>

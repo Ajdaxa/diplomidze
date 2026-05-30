@@ -36,6 +36,7 @@ Route::prefix('auth/otp')->name('otp.')->group(function () {
     Route::get('/password', [OtpAuthController::class, 'showPasswordForm'])->name('password.form');
     Route::get('/register', [OtpAuthController::class, 'showRegisterForm'])->name('register.form');
     Route::get('/telegram', [OtpAuthController::class, 'showTelegramForm'])->name('telegram.form');
+    Route::get('/telegram/complete/{token}', [OtpAuthController::class, 'completeTelegramLogin'])->name('telegram.complete');
     Route::post('/send', [OtpAuthController::class, 'sendCode'])->name('send');
     Route::post('/verify', [OtpAuthController::class, 'verifyCode'])->name('verify');
     Route::post('/password', [OtpAuthController::class, 'loginWithPassword'])->name('password');

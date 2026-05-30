@@ -1,12 +1,11 @@
 @extends('layouts.app')
 
+@section('title', 'Каталог')
+
 @section('content')
     @php $favoriteLookup = array_flip(array_map('intval', $favoriteIds ?? [])); @endphp
 
-    <div class="mb-8">
-        <h1 class="text-[clamp(1.5rem,4vw,1.875rem)] font-light uppercase tracking-wide">Каталог</h1>
-        <p class="mt-2 max-w-prose text-sm text-neutral-500">Фильтры, сортировка и вся коллекция в одном месте</p>
-    </div>
+    <x-page-heading title="Каталог" lede="Фильтры, сортировка и вся коллекция в одном месте" />
 
     <div id="catalog" class="scroll-mt-24">
     <div class="tabs-scroll -mx-1 mb-0 flex snap-x snap-mandatory gap-2 overflow-x-auto border-b border-neutral-200 px-1 pb-4 lg:mx-0 lg:flex-wrap lg:overflow-visible lg:px-0">
@@ -54,7 +53,7 @@
         <div class="flex flex-wrap gap-4 text-xs text-neutral-600">
             <label class="inline-flex items-center gap-2"><input type="checkbox" id="filter-in-stock"> Только в наличии</label>
             <label class="inline-flex items-center gap-2"><input type="checkbox" id="filter-new"> Только новинки</label>
-            <label class="inline-flex items-center gap-2"><input type="checkbox" id="filter-limited"> Только limited</label>
+            <label class="inline-flex items-center gap-2"><input type="checkbox" id="filter-limited"> Только лимитированные</label>
         </div>
     </div>
 
@@ -95,11 +94,7 @@
                             <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z"/></svg>
                         </a>
                     @endauth
-                    @if($product->is_new_collection)
-                        <span class="absolute left-2 top-2 bg-black px-2 py-0.5 text-[9px] font-semibold uppercase tracking-wider text-white">New</span>
-                    @elseif($product->is_limited_edition)
-                        <span class="absolute left-2 top-2 bg-neutral-800 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-wider text-white">Limited</span>
-                    @endif
+                    <x-product-badge :product="$product" />
                 </div>
                 <div class="mt-4 space-y-1">
                     <h2 class="text-xs font-normal uppercase leading-snug tracking-wide text-black">
@@ -168,6 +163,13 @@
             fuse = new Fuse(productData(), { keys: ['name', 'description'], threshold: 0.38 });
         }
         buildFuse();
+
+        (function applyCategoryFromQuery() {
+            const cat = new URLSearchParams(window.location.search).get('cat');
+            if (!cat) return;
+            const tab = [...document.querySelectorAll('.category-tab')].find((b) => (b.dataset.cat || '') === cat);
+            tab?.click();
+        })();
 
         document.querySelectorAll('.category-tab').forEach((btn) => {
             btn.addEventListener('click', () => {

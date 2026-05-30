@@ -12,6 +12,8 @@ class ProductController extends Controller
     {
         abort_unless($product->is_active, 404);
 
+        $product->load('categoryModel');
+
         $isFavorite = false;
         if (Auth::check()) {
             /** @var User $user */

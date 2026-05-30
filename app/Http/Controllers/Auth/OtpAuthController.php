@@ -209,9 +209,43 @@ class OtpAuthController extends Controller
             ? "https://t.me/{$botUsername}?start={$token}"
             : "Откройте бота и отправьте /start {$token}";
 
+        session([
+            'telegram_pending_email' => $user->email,
+            'telegram_pending_user_id' => $user->id,
+        ]);
+
         return redirect()->route('otp.telegram.form')
-            ->with('status', "Аккаунт создан. Подтвердите вход в Telegram: {$link}")
+            ->with('status', "Шаг 1/2: откройте бота и нажмите Start — {$link}")
             ->with('status_type', 'info');
+    }
+
+    public function completeTelegramLogin(string $token)
+    {
+        $userId = Cache::get('tg_login:'.$token);
+
+        if (! $userId) {
+            return redirect()->route('otp.telegram.form')
+                ->withErrors(['identity' => 'Ссылка входа устарела. Привяжите Telegram заново или войдите по email и коду.'])
+                ->with('status_type', 'error');
+        }
+
+        $user = User::query()->find($userId);
+
+        if (! $user || ! $user->telegram_chat_id) {
+            Cache::forget('tg_login:'.$token);
+
+            return redirect()->route('otp.telegram.form')
+                ->withErrors(['identity' => 'Аккаунт не найден или Telegram ещё не привязан. Сначала откройте бота по ссылке.']);
+        }
+
+        Cache::forget('tg_login:'.$token);
+        session()->forget(['telegram_pending_email', 'telegram_pending_user_id']);
+
+        Auth::login($user, remember: true);
+
+        return $this->redirectByRole($user)
+            ->with('status', 'Вход через Telegram выполнен.')
+            ->with('status_type', 'success');
     }
 
     public function logout()

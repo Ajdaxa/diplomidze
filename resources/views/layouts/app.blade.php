@@ -5,8 +5,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <meta name="theme-color" content="#ffffff">
-    <title>Дəб</title>
+    <meta name="description" content="@yield('meta_description', 'Дəб — минималистичный интернет-магазин одежды и аксессуаров. Каталог, доставка, оплата онлайн.')">
+    <title>@hasSection('title')@yield('title') — Дəб@elseДəб — интернет-магазин@endif</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = { theme: { extend: { fontFamily: { sans: ['Inter', 'system-ui', 'Segoe UI', 'sans-serif'] } } } };
+    </script>
     <script src="https://cdn.jsdelivr.net/npm/fuse.js@7.0.0"></script>
     <style>
         :root {
@@ -24,7 +31,8 @@
                 transition-duration: 0.01ms !important;
             }
         }
-        body { overflow-x: hidden; }
+        body { overflow-x: hidden; font-family: Inter, system-ui, 'Segoe UI', sans-serif; }
+        :focus-visible { outline: 2px solid #171717; outline-offset: 2px; }
         .container-app {
             width: 100%;
             max-width: var(--container);
@@ -56,17 +64,19 @@
     <header class="sticky top-0 z-50 border-b border-neutral-200 bg-white/80 backdrop-blur-md supports-[backdrop-filter]:bg-white/70">
         <div class="container-app flex min-h-14 items-center justify-between gap-3 py-2 sm:min-h-16 sm:py-3">
             <a href="{{ route('home') }}" class="shrink-0 text-base font-semibold tracking-[0.18em] text-neutral-900 sm:text-lg">Дəб</a>
-            <nav class="hidden flex-wrap items-center justify-end gap-x-4 gap-y-2 lg:flex xl:gap-x-6" aria-label="Основная навигация">
-                @include('partials.site-nav-links', ['variant' => 'desktop', 'cartCount' => $cartCount])
-            </nav>
-            <button type="button"
-                    id="mobile-menu-open"
-                    class="inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg border border-neutral-200 bg-white text-neutral-900 shadow-sm lg:hidden focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neutral-900"
-                    aria-expanded="false"
-                    aria-controls="mobile-nav-drawer"
-                    aria-label="Открыть меню">
-                <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 6h16M4 12h16M4 18h16"/></svg>
-            </button>
+            <div class="ml-auto flex shrink-0 items-center justify-end gap-2 sm:gap-3">
+                <nav class="hidden items-center justify-end gap-x-4 lg:flex xl:gap-x-6" aria-label="Основная навигация">
+                    @include('partials.site-nav-links', ['variant' => 'desktop', 'cartCount' => $cartCount])
+                </nav>
+                <button type="button"
+                        id="mobile-menu-open"
+                        class="inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-lg border border-neutral-200 bg-white text-neutral-900 shadow-sm lg:hidden focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neutral-900"
+                        aria-expanded="false"
+                        aria-controls="mobile-nav-drawer"
+                        aria-label="Открыть меню">
+                    <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 6h16M4 12h16M4 18h16"/></svg>
+                </button>
+            </div>
         </div>
     </header>
 

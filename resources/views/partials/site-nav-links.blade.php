@@ -5,6 +5,15 @@
     $linkClass = $isMobile
         ? 'flex min-h-11 items-center rounded-lg px-3 text-sm font-medium uppercase tracking-wider text-neutral-800 hover:bg-neutral-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neutral-900'
         : 'inline-flex min-h-9 items-center rounded-md px-2 text-xs font-medium uppercase tracking-wider text-neutral-600 hover:text-black focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neutral-900';
+    $authUser = auth()->user();
+    $canAccessAdmin = $authUser && (
+        $authUser->hasAnyRole(['admin', 'manager'])
+        || in_array((string) ($authUser->role ?? ''), ['admin', 'manager'], true)
+    );
+    $isCourier = $authUser && (
+        $authUser->hasRole('courier')
+        || ($authUser->role ?? '') === 'courier'
+    );
 @endphp
 <a href="{{ route('home') }}" class="{{ $linkClass }}">Главная</a>
 <a href="{{ route('catalog') }}" class="{{ $linkClass }}">Каталог</a>
@@ -16,13 +25,11 @@
     @endif
 </a>
 @auth
-    @if(auth()->user()->hasRole('client'))
-        <a href="{{ route('profile.show') }}" class="{{ $linkClass }}">Профиль</a>
-    @endif
-    @if(auth()->user()->hasRole('courier'))
+    <a href="{{ route('profile.show') }}" class="{{ $linkClass }}">Профиль</a>
+    @if($isCourier)
         <a href="{{ route('courier.orders.index') }}" class="{{ $linkClass }}">Доставка</a>
     @endif
-    @if(auth()->user()->hasAnyRole(['admin', 'manager']))
+    @if($canAccessAdmin)
         <a href="{{ route('admin.hub') }}" class="{{ $linkClass }} font-semibold text-neutral-900">Админ-панель</a>
     @endif
 @else

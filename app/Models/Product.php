@@ -23,6 +23,7 @@ class Product extends Model
     protected $fillable = [
         'name',
         'slug',
+        'sku',
         'category_id',
         'category',
         'description',
@@ -46,6 +47,33 @@ class Product extends Model
         'is_limited_edition' => 'bool',
         'available_sizes' => 'array',
     ];
+
+    protected static function booted(): void
+    {
+        static::created(function (Product $product) {
+            if (filled($product->sku)) {
+                return;
+            }
+            $product->updateQuietly(['sku' => self::generateSku($product)]);
+        });
+    }
+
+    /** Артикул: DAB-{код категории}-{id}. */
+    public static function generateSku(Product $product): string
+    {
+        $slug = $product->category;
+        if ($product->relationLoaded('categoryModel') && $product->categoryModel) {
+            $slug = $product->categoryModel->slug;
+        } elseif ($product->category_id && ! $product->relationLoaded('categoryModel')) {
+            $slug = $product->categoryModel()->value('slug') ?? $slug;
+        }
+
+        $letters = strtoupper(preg_replace('/[^A-Za-z]/', '', (string) $slug));
+        $code = substr($letters !== '' ? $letters : 'GEN', 0, 3);
+        $code = str_pad($code, 3, 'X');
+
+        return sprintf('DAB-%s-%06d', $code, (int) $product->id);
+    }
 
     public function auditLogs(): HasMany
     {
