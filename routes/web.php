@@ -6,6 +6,7 @@ use App\Http\Controllers\Admin\CourierController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\OrderController;
 use App\Http\Controllers\Admin\ProductController;
+use App\Http\Controllers\Admin\ProductDiscountController;
 use App\Http\Controllers\Admin\PromocodeController;
 use App\Http\Controllers\Auth\OtpAuthController;
 use App\Http\Controllers\CartController;
@@ -78,6 +79,8 @@ Route::middleware('auth')->group(function () {
         Route::get('/categories/{category}/edit', [CategoryController::class, 'edit'])->name('categories.edit');
         Route::patch('/categories/{category}', [CategoryController::class, 'update'])->name('categories.update');
         Route::delete('/categories/{category}', [CategoryController::class, 'destroy'])->name('categories.destroy');
+        Route::get('/sales', [ProductDiscountController::class, 'index'])->name('sales.index');
+        Route::post('/sales', [ProductDiscountController::class, 'apply'])->name('sales.apply');
         Route::get('/products', [ProductController::class, 'index'])->name('products.index');
         Route::get('/products/create', [ProductController::class, 'create'])->name('products.create');
         Route::post('/products', [ProductController::class, 'store'])->name('products.store');

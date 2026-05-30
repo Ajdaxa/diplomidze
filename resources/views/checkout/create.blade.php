@@ -17,7 +17,12 @@
                                     <p class="font-medium uppercase tracking-wide">{{ $item['product']->name }}</p>
                                     <p class="mt-1 text-xs text-neutral-500">{{ $item['size'] }} × {{ $item['quantity'] }}</p>
                                 </div>
-                                <p class="shrink-0 font-semibold">{{ number_format($item['line_total'], 0, '.', ' ') }} ₽</p>
+                                <div class="shrink-0 text-right">
+                                    @if($item['product_discount'] > 0)
+                                        <p class="text-xs text-neutral-400 line-through">{{ number_format($item['line_original_total'], 0, '.', ' ') }} ₽</p>
+                                    @endif
+                                    <p class="font-semibold">{{ number_format($item['line_total'], 0, '.', ' ') }} ₽</p>
+                                </div>
                             </li>
                         @empty
                             <li class="text-sm text-neutral-500">Корзина пуста.</li>
@@ -26,11 +31,15 @@
                     <div class="mt-6 space-y-2 border-t border-neutral-200 pt-6 text-sm">
                         <div class="flex justify-between text-neutral-600">
                             <span>Товары</span>
-                            <span id="checkout-subtotal">{{ number_format($cartTotal, 0, '.', ' ') }} ₽</span>
+                            <span id="checkout-catalog-subtotal">{{ number_format($catalogSubtotal, 0, '.', ' ') }} ₽</span>
                         </div>
-                        <div id="checkout-discount-row" class="hidden flex justify-between text-emerald-700">
-                            <span>Скидка</span>
-                            <span id="checkout-discount">—</span>
+                        <div id="checkout-product-discount-row" class="{{ $productDiscount > 0 ? 'flex' : 'hidden' }} justify-between text-rose-700">
+                            <span>Скидка на товары</span>
+                            <span id="checkout-product-discount">− {{ number_format($productDiscount, 0, '.', ' ') }} ₽</span>
+                        </div>
+                        <div id="checkout-promo-discount-row" class="hidden justify-between text-emerald-700">
+                            <span>Промокод</span>
+                            <span id="checkout-promo-discount">—</span>
                         </div>
                         <div class="flex justify-between border-t border-neutral-200 pt-4 text-base font-bold">
                             <span>К оплате</span>
@@ -101,9 +110,11 @@
             const csrf = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
             const promoInput = document.getElementById('checkout-promocode');
             const hint = document.getElementById('checkout-promo-hint');
-            const subEl = document.getElementById('checkout-subtotal');
-            const discRow = document.getElementById('checkout-discount-row');
-            const discEl = document.getElementById('checkout-discount');
+            const catalogEl = document.getElementById('checkout-catalog-subtotal');
+            const productDiscRow = document.getElementById('checkout-product-discount-row');
+            const productDiscEl = document.getElementById('checkout-product-discount');
+            const promoDiscRow = document.getElementById('checkout-promo-discount-row');
+            const promoDiscEl = document.getElementById('checkout-promo-discount');
             const totEl = document.getElementById('checkout-total');
             let t;
             async function preview() {
@@ -128,16 +139,26 @@
                 } catch (e) {
                     return;
                 }
-                if (!res.ok || typeof data.subtotal !== 'number') {
+                if (!res.ok || typeof data.total !== 'number') {
                     return;
                 }
                 if (data.empty_cart) return;
-                subEl.textContent = fmtRub(data.subtotal);
-                if (Number(data.discount) > 0 && data.promocode?.valid) {
-                    discRow?.classList.remove('hidden');
-                    discEl.textContent = '− ' + fmtRub(data.discount);
+                catalogEl.textContent = fmtRub(data.catalog_subtotal ?? data.subtotal);
+                if (Number(data.product_discount) > 0) {
+                    productDiscRow?.classList.remove('hidden');
+                    productDiscRow?.classList.add('flex');
+                    productDiscEl.textContent = '− ' + fmtRub(data.product_discount);
                 } else {
-                    discRow?.classList.add('hidden');
+                    productDiscRow?.classList.add('hidden');
+                    productDiscRow?.classList.remove('flex');
+                }
+                if (Number(data.promocode_discount) > 0 && data.promocode?.valid) {
+                    promoDiscRow?.classList.remove('hidden');
+                    promoDiscRow?.classList.add('flex');
+                    promoDiscEl.textContent = '− ' + fmtRub(data.promocode_discount);
+                } else {
+                    promoDiscRow?.classList.add('hidden');
+                    promoDiscRow?.classList.remove('flex');
                 }
                 totEl.textContent = fmtRub(data.total);
                 if (data.promocode?.message && promoInput?.value?.trim()) {

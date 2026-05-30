@@ -1,5 +1,5 @@
 @php
-    $supportEmail = config('mail.from.address', 'support@dyab.local');
+    $supportEmail = config('mail.from.address', 'support@dyab.ru');
 @endphp
 <footer class="mt-auto border-t border-neutral-200 bg-neutral-50">
     <div class="container-app py-10 sm:py-12">

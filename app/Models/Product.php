@@ -29,6 +29,7 @@ class Product extends Model
         'description',
         'composition',
         'price',
+        'sale_percent',
         'stock',
         'image',
         'secondary_image',
@@ -46,7 +47,23 @@ class Product extends Model
         'is_new_collection' => 'bool',
         'is_limited_edition' => 'bool',
         'available_sizes' => 'array',
+        'sale_percent' => 'integer',
     ];
+
+    public function hasSale(): bool
+    {
+        return $this->sale_percent !== null && (int) $this->sale_percent > 0;
+    }
+
+    public function saleUnitPrice(): float
+    {
+        $base = (float) $this->price;
+        if (! $this->hasSale()) {
+            return $base;
+        }
+
+        return round($base * (1 - ((int) $this->sale_percent / 100)), 2);
+    }
 
     protected static function booted(): void
     {

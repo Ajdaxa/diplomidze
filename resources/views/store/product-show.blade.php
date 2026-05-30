@@ -68,7 +68,15 @@ $catalogCategoryUrl = route('catalog').'?cat='.rawurlencode($categorySlug);
                 </button>
             </div>
         @endif
-        <p class="mt-4 text-[clamp(1.375rem,3.5vw,1.75rem)] font-bold text-black">{{ number_format($product->price, 0, '.', ' ') }} ₽</p>
+        <div class="mt-4">
+            @if($product->hasSale())
+                <p class="mb-2 inline-flex items-center gap-2 rounded-full bg-rose-50 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-rose-700">
+                    <span>Скидка −{{ (int) $product->sale_percent }}%</span>
+                    <span class="text-neutral-500">экономия {{ number_format($product->price - $product->saleUnitPrice(), 0, '.', ' ') }} ₽</span>
+                </p>
+            @endif
+            <x-product-price :product="$product" size="lg" />
+        </div>
         @if($product->stock < 1)
             <p class="mt-2 text-xs font-semibold uppercase tracking-wider text-rose-700">Нет в наличии</p>
         @elseif($product->stock < 4)

@@ -7,6 +7,7 @@ use App\Models\OrderItem;
 use App\Models\Product;
 use App\Services\DaDataService;
 use App\Services\YooKassaService;
+use App\Support\CartPricing;
 use App\Support\PromocodePricing;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -20,54 +21,23 @@ class CheckoutController extends Controller
     ) {
     }
 
-    private function cartLines(): array
-    {
-        $raw = session('cart', []);
-        $lines = [];
-        foreach ($raw as $key => $qty) {
-            if (! is_string($key) || ! str_contains($key, '|')) {
-                continue;
-            }
-            [$id, $size] = explode('|', $key, 2);
-            $lines[] = [
-                'product_id' => (int) $id,
-                'size' => $size,
-                'quantity' => max(1, (int) $qty),
-            ];
-        }
-
-        return $lines;
-    }
-
     private function buildCartItems(): \Illuminate\Support\Collection
     {
-        $lines = $this->cartLines();
-        $products = Product::query()
-            ->whereIn('id', collect($lines)->pluck('product_id')->unique())
-            ->get()
-            ->keyBy('id');
-
-        return collect($lines)->map(function (array $line) use ($products) {
-            $product = $products->get($line['product_id']);
-            if (! $product) {
-                return null;
-            }
-
-            return [
-                'product' => $product,
-                'size' => $line['size'],
-                'quantity' => $line['quantity'],
-                'line_total' => (float) $product->price * $line['quantity'],
-            ];
-        })->filter()->values();
+        return CartPricing::buildFromSession(session('cart', []));
     }
 
     public function create()
     {
         $items = $this->buildCartItems();
-        $cartTotal = $items->sum('line_total');
+        $summary = CartPricing::summarize($items);
 
-        return view('checkout.create', compact('items', 'cartTotal'));
+        return view('checkout.create', [
+            'items' => $items,
+            'cartTotal' => $summary['total'],
+            'catalogSubtotal' => $summary['catalog_subtotal'],
+            'productDiscount' => $summary['product_discount'],
+            'subtotal' => $summary['subtotal'],
+        ]);
     }
 
     public function previewTotals(Request $request)
@@ -77,18 +47,20 @@ class CheckoutController extends Controller
         ]);
 
         $items = $this->buildCartItems();
-        $subtotal = (float) $items->sum('line_total');
-        $preview = PromocodePricing::preview($subtotal, (string) ($validated['promocode'] ?? ''));
+        $summary = CartPricing::summarize($items, (string) ($validated['promocode'] ?? ''));
 
         return response()->json([
             'empty_cart' => $items->isEmpty(),
-            'subtotal' => round($preview['subtotal'], 2),
-            'discount' => round($preview['discount'], 2),
-            'total' => round($preview['total'], 2),
+            'catalog_subtotal' => $summary['catalog_subtotal'],
+            'product_discount' => $summary['product_discount'],
+            'subtotal' => $summary['subtotal'],
+            'promocode_discount' => $summary['promocode_discount'],
+            'discount' => round($summary['product_discount'] + $summary['promocode_discount'], 2),
+            'total' => $summary['total'],
             'promocode' => [
-                'valid' => $preview['promocode_valid'],
-                'code' => $preview['promocode_code'],
-                'message' => $preview['message'],
+                'valid' => $summary['promocode_valid'],
+                'code' => $summary['promocode_code'],
+                'message' => $summary['promocode_message'],
             ],
         ]);
     }
@@ -126,9 +98,8 @@ class CheckoutController extends Controller
             }
         }
 
-        $subtotal = (float) $items->sum('line_total');
+        $summary = CartPricing::summarize($items, (string) ($validated['promocode'] ?? ''));
         $promocode = null;
-        $total = $subtotal;
 
         $rawPromo = trim((string) ($validated['promocode'] ?? ''));
         if ($rawPromo !== '') {
@@ -138,13 +109,17 @@ class CheckoutController extends Controller
                     'promocode' => 'Промокод не найден, истёк или недоступен.',
                 ]);
             }
-            $total = max(0.0, $subtotal - PromocodePricing::discountAmount($subtotal, $promocode));
+            if (! $summary['promocode_valid']) {
+                return back()->withErrors([
+                    'promocode' => 'Промокод не найден, истёк или недоступен.',
+                ]);
+            }
             $promocode->increment('usage_count');
         }
 
         $order = Order::query()->create([
             'user_id' => Auth::id(),
-            'total_price' => $total,
+            'total_price' => $summary['total'],
             'status' => 'pending',
             'address' => $validated['address'],
             'promocode_id' => $promocode?->id,
@@ -156,7 +131,7 @@ class CheckoutController extends Controller
                 'product_id' => $item['product']->id,
                 'size' => $item['size'],
                 'quantity' => $item['quantity'],
-                'price' => $item['product']->price,
+                'price' => $item['unit_price'],
             ]);
         }
 

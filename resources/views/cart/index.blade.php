@@ -21,7 +21,17 @@
                                 <p class="mt-0.5 font-mono text-[10px] text-neutral-500">{{ $item['product']->sku }}</p>
                             @endif
                             <p class="mt-1 text-xs text-neutral-500">Размер: <span class="font-medium text-black">{{ $item['size'] }}</span></p>
-                            <p class="text-sm font-bold">{{ number_format($item['product']->price, 0, '.', ' ') }} ₽</p>
+                            @if($item['product']->hasSale())
+                                <p class="mt-1 text-xs text-rose-700">Скидка −{{ $item['product']->sale_percent }}%</p>
+                            @endif
+                            <p class="mt-1 text-sm">
+                                @if($item['product_discount'] > 0)
+                                    <span class="text-neutral-400 line-through">{{ number_format($item['line_original_total'], 0, '.', ' ') }} ₽</span>
+                                    <span class="ml-1 font-bold text-rose-700">{{ number_format($item['line_total'], 0, '.', ' ') }} ₽</span>
+                                @else
+                                    <span class="font-bold">{{ number_format($item['line_total'], 0, '.', ' ') }} ₽</span>
+                                @endif
+                            </p>
                         </div>
                     </div>
                     <div class="flex flex-wrap items-center gap-3 sm:shrink-0">
@@ -61,9 +71,15 @@
                 <div class="space-y-2 text-sm">
                     <div class="flex justify-between text-neutral-600">
                         <span>Товары</span>
-                        <span>{{ number_format($total, 0, '.', ' ') }} ₽</span>
+                        <span>{{ number_format($catalogSubtotal, 0, '.', ' ') }} ₽</span>
                     </div>
-                    <div class="flex justify-between text-base font-semibold text-neutral-900">
+                    @if($productDiscount > 0)
+                        <div class="flex justify-between text-rose-700">
+                            <span>Скидка на товары</span>
+                            <span>− {{ number_format($productDiscount, 0, '.', ' ') }} ₽</span>
+                        </div>
+                    @endif
+                    <div class="flex justify-between border-t border-neutral-200 pt-2 text-base font-semibold text-neutral-900">
                         <span>К оплате</span>
                         <span>{{ number_format($total, 0, '.', ' ') }} ₽</span>
                     </div>

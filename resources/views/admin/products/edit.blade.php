@@ -33,6 +33,14 @@
                 <input name="stock" type="number" class="w-full rounded border border-neutral-300 px-3 py-2" required value="{{ old('stock', $product->stock) }}">
             </div>
         </div>
+        @if($product->hasSale())
+            <p class="rounded-lg border border-rose-100 bg-rose-50 px-3 py-2 text-xs text-rose-800">
+                Активная скидка: <strong>−{{ $product->sale_percent }}%</strong>.
+                Изменить — в <a href="{{ route('admin.sales.index') }}" class="font-semibold underline">«Скидки на товары»</a>.
+            </p>
+        @else
+            <p class="text-xs text-neutral-500">Скидку задайте в <a href="{{ route('admin.sales.index') }}" class="underline">«Скидки на товары»</a>.</p>
+        @endif
         <div>
             <label class="mb-1 block text-xs font-semibold uppercase tracking-wider">Размеры (через запятую)</label>
             <input name="available_sizes" class="w-full rounded border border-neutral-300 px-3 py-2" value="{{ old('available_sizes', is_array($product->available_sizes) ? implode(', ', $product->available_sizes) : '') }}">

@@ -78,7 +78,8 @@
                      data-stock="{{ $product->stock }}"
                      data-new="{{ $product->is_new_collection ? '1' : '0' }}"
                      data-limited="{{ $product->is_limited_edition ? '1' : '0' }}"
-                     data-price="{{ $product->price }}"
+                     data-price="{{ $product->saleUnitPrice() }}"
+                     data-sale="{{ $product->hasSale() ? '1' : '0' }}"
                      data-name="{{ $product->name }}"
                      data-created="{{ $product->created_at?->timestamp ?? 0 }}">
                 <div class="relative aspect-[3/4] overflow-hidden bg-neutral-100">
@@ -100,7 +101,7 @@
                     <h2 class="text-xs font-normal uppercase leading-snug tracking-wide text-black">
                         <a href="{{ route('products.show', $product->slug) }}" class="hover:underline">{{ $product->name }}</a>
                     </h2>
-                    <p class="text-sm font-bold text-black">{{ number_format($product->price, 0, '.', ' ') }} ₽</p>
+                    <x-product-price :product="$product" />
                     @if($product->stock < 1)
                         <p class="text-[10px] text-rose-700">Нет в наличии</p>
                     @elseif($product->stock < 3)

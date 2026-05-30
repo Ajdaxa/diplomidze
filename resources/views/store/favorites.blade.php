@@ -21,7 +21,7 @@
                         <img src="{{ $product->image ?: 'https://picsum.photos/800/1067?random='.$product->id }}" alt="{{ $product->name }}" class="h-full w-full object-cover transition duration-500 group-hover:scale-[1.02]">
                     </div>
                     <h2 class="mt-3 line-clamp-2 text-xs uppercase leading-snug tracking-wide">{{ $product->name }}</h2>
-                    <p class="mt-1 text-sm font-bold">{{ number_format($product->price, 0, '.', ' ') }} ₽</p>
+                    <x-product-price :product="$product" class="mt-1" />
                 </a>
             </article>
             @endforeach

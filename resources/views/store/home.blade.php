@@ -52,7 +52,7 @@
                             <h3 class="text-[11px] font-medium uppercase leading-snug tracking-wide text-neutral-900 sm:text-xs">
                                 <a href="{{ route('products.show', $product->slug) }}" class="hover:underline">{{ $product->name }}</a>
                             </h3>
-                            <p class="mt-1 text-sm font-bold">{{ number_format($product->price, 0, '.', ' ') }} ₽</p>
+                            <x-product-price :product="$product" class="mt-1" />
                         </div>
                     </article>
                 @endforeach
@@ -66,7 +66,7 @@
         <div class="mt-8 grid gap-6 sm:grid-cols-3">
             <div class="rounded-xl border border-neutral-200 bg-white p-5 shadow-sm">
                 <p class="text-[10px] font-semibold uppercase tracking-wider text-neutral-500">Почта</p>
-                <a href="mailto:{{ config('mail.from.address', 'support@dyab.local') }}" class="mt-2 inline-block text-sm font-medium text-neutral-900 underline decoration-neutral-300 underline-offset-2 hover:decoration-black">{{ config('mail.from.address', 'support@dyab.local') }}</a>
+                <a href="mailto:{{ config('mail.from.address', 'support@dyab.ru') }}" class="mt-2 inline-block text-sm font-medium text-neutral-900 underline decoration-neutral-300 underline-offset-2 hover:decoration-black">{{ config('mail.from.address', 'support@dyab.ru') }}</a>
             </div>
             <div class="rounded-xl border border-neutral-200 bg-white p-5 shadow-sm">
                 <p class="text-[10px] font-semibold uppercase tracking-wider text-neutral-500">Время работы</p>

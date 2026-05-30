@@ -29,6 +29,7 @@
                 <input name="stock" type="number" class="w-full rounded border border-neutral-300 px-3 py-2" required value="{{ old('stock', 0) }}">
             </div>
         </div>
+        <p class="text-xs text-neutral-500">Скидку на товар можно задать в разделе <a href="{{ route('admin.sales.index') }}" class="underline">«Скидки на товары»</a>.</p>
         <div>
             <label class="mb-1 block text-xs font-semibold uppercase tracking-wider">Размеры (через запятую)</label>
             <input name="available_sizes" class="w-full rounded border border-neutral-300 px-3 py-2" placeholder="XS, S, M, L, XL" value="{{ old('available_sizes', 'XS, S, M, L, XL') }}">
