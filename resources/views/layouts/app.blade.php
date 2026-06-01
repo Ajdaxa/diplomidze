@@ -14,7 +14,6 @@
     <script>
         tailwind.config = { theme: { extend: { fontFamily: { sans: ['Inter', 'system-ui', 'Segoe UI', 'sans-serif'] } } } };
     </script>
-    <script src="https://cdn.jsdelivr.net/npm/fuse.js@7.0.0"></script>
     <style>
         :root {
             --container: 80rem;

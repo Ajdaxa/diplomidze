@@ -35,7 +35,10 @@ class StorefrontController extends Controller
     public function catalog(Request $request): View
     {
         $filters = CatalogQuery::filtersFromRequest($request);
-        $products = CatalogQuery::apply(CatalogQuery::base(), $filters)->get();
+        $perPage = max(1, min(48, config('store.catalog_per_page', 16)));
+        $products = CatalogQuery::apply(CatalogQuery::base(), $filters)
+            ->paginate($perPage)
+            ->withQueryString();
 
         $categories = Category::query()
             ->where('is_active', true)
