@@ -6,11 +6,17 @@ use App\Http\Controllers\Controller;
 use App\Models\Order;
 use App\Models\Product;
 use App\Models\User;
+use App\Services\TelegramService;
+use App\Support\OrderStatus;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 class OrderController extends Controller
 {
+    public function __construct(private readonly TelegramService $telegramService)
+    {
+    }
+
     public function index()
     {
         $orders = Order::query()->with(['user', 'courier', 'items.product'])->latest()->paginate(20);
@@ -35,10 +41,13 @@ class OrderController extends Controller
             'courier_id' => ['required', 'exists:users,id'],
         ]);
 
+        $newStatus = $order->status === 'paid' ? 'in_delivery' : $order->status;
         $order->update([
             'courier_id' => $validated['courier_id'],
-            'status' => $order->status === 'paid' ? 'in_delivery' : $order->status,
+            'status' => $newStatus,
         ]);
+
+        $this->notifyCustomerStatus($order->fresh(['user']), $newStatus);
 
         return back()->with('status', 'Курьер назначен.');
     }
@@ -56,8 +65,23 @@ class OrderController extends Controller
         }
 
         $this->applyStatusWithInventory($order, $validated['status']);
+        $this->notifyCustomerStatus($order->fresh(['user']), $validated['status']);
 
         return back()->with('status', 'Статус заказа обновлен.');
+    }
+
+    private function notifyCustomerStatus(Order $order, string $status): void
+    {
+        $chatId = $order->user?->telegram_chat_id;
+        if (! $chatId || in_array($status, ['pending', 'cancelled'], true)) {
+            return;
+        }
+
+        $this->telegramService->orderStatusForCustomer(
+            (string) $chatId,
+            $order->id,
+            OrderStatus::label($status)
+        );
     }
 
     private function applyStatusWithInventory(Order $order, string $newStatus): void

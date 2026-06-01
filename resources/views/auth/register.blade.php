@@ -14,7 +14,7 @@
             @csrf
             <x-floating-input name="name" label="Имя" autocomplete="name" :required="true" />
             <x-floating-input name="email" type="email" label="Email" autocomplete="email" :required="true" />
-            <x-floating-input name="phone" label="Телефон (необязательно)" autocomplete="tel" inputmode="tel" />
+            <x-floating-input name="phone" label="Телефон" autocomplete="tel" inputmode="tel" :required="true" />
             <div>
                 <x-floating-input name="password" type="password" label="Пароль" autocomplete="new-password" :required="true" />
                 <p class="mt-1.5 text-[11px] text-neutral-500">Минимум 6 символов.</p>

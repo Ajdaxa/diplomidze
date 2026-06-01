@@ -7,11 +7,13 @@
     </section>
 
     @if($products->isEmpty())
-        <div class="rounded-xl border border-dashed border-neutral-300 bg-white p-8 text-center">
-            <p class="text-lg font-medium">Пока пусто</p>
-            <p class="mt-2 text-sm text-neutral-500">Добавляйте товары в избранное в каталоге и в карточке товара.</p>
-            <a href="{{ route('catalog') }}" class="mt-4 inline-block rounded-lg bg-black px-4 py-2 text-sm text-white">В каталог</a>
-        </div>
+        <x-empty-state
+            icon="heart"
+            title="Избранное пусто"
+            description="Нажмите на сердечко в каталоге или на странице товара — сохранённые модели будут здесь."
+        >
+            <a href="{{ route('catalog') }}" class="inline-flex min-h-11 items-center justify-center bg-black px-6 text-xs font-semibold uppercase tracking-[0.2em] text-white hover:bg-neutral-800">Смотреть каталог</a>
+        </x-empty-state>
     @else
         <div class="grid grid-cols-2 gap-x-[clamp(0.75rem,2vw,1.25rem)] gap-y-8 min-[520px]:grid-cols-[repeat(auto-fill,minmax(11rem,1fr))] xl:grid-cols-4 xl:gap-y-10">
             @foreach($products as $product)

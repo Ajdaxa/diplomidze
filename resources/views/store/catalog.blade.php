@@ -27,35 +27,51 @@
 
     <div id="sort-panel" class="hidden border-b border-neutral-200 bg-white px-2 py-3">
         <div class="flex flex-wrap gap-2">
-            <button type="button" class="sort-btn rounded border border-neutral-300 px-3 py-1.5 text-xs uppercase" data-sort="new">Новинки</button>
-            <button type="button" class="sort-btn rounded border border-neutral-300 px-3 py-1.5 text-xs uppercase" data-sort="price-asc">Цена ↑</button>
-            <button type="button" class="sort-btn rounded border border-neutral-300 px-3 py-1.5 text-xs uppercase" data-sort="price-desc">Цена ↓</button>
-            <button type="button" class="sort-btn rounded border border-neutral-300 px-3 py-1.5 text-xs uppercase" data-sort="name">Название</button>
+            @foreach(['new' => 'Новинки', 'price-asc' => 'Цена ↑', 'price-desc' => 'Цена ↓', 'name' => 'Название'] as $sortKey => $sortLabel)
+                <button type="button" class="sort-btn rounded border px-3 py-1.5 text-xs uppercase {{ ($filters['sort'] ?? 'new') === $sortKey ? 'border-black bg-black text-white' : 'border-neutral-300' }}" data-sort="{{ $sortKey }}">{{ $sortLabel }}</button>
+            @endforeach
         </div>
     </div>
 
     <div id="filter-panel" class="hidden border-b border-neutral-200 bg-neutral-50 px-2 py-4">
-        <input id="product-search" type="search" class="mb-3 w-full border border-neutral-300 bg-white px-3 py-2 text-sm" placeholder="Поиск (в т.ч. с опечатками)">
-        <p class="mb-2 text-xs font-semibold uppercase tracking-wider text-neutral-500">Цвет</p>
-        <div class="mb-4 flex flex-wrap gap-2">
-            <button type="button" class="color-filter h-8 w-8 border border-neutral-900 bg-black" data-color="black" title="black"></button>
-            <button type="button" class="color-filter h-8 w-8 border border-neutral-300 bg-[#5b1f2a]" data-color="wine"></button>
-            <button type="button" class="color-filter h-8 w-8 border border-neutral-300 bg-[#d6c08d]" data-color="gold"></button>
-            <button type="button" class="color-filter border border-neutral-300 px-3 py-1 text-xs" data-color="">Все</button>
-        </div>
+        <input id="product-search" type="search" class="mb-3 w-full border border-neutral-300 bg-white px-3 py-2 text-sm" placeholder="Поиск (в т.ч. с опечатками)" value="{{ $filters['q'] ?? '' }}">
         <p class="mb-2 text-xs font-semibold uppercase tracking-wider text-neutral-500">Пол</p>
         <div class="mb-4 flex flex-wrap gap-2">
-            <button type="button" class="gender-filter border border-neutral-300 px-3 py-1 text-xs" data-gender="">Любой</button>
-            <button type="button" class="gender-filter border border-neutral-300 px-3 py-1 text-xs" data-gender="female">Женский</button>
-            <button type="button" class="gender-filter border border-neutral-300 px-3 py-1 text-xs" data-gender="male">Мужской</button>
-            <button type="button" class="gender-filter border border-neutral-300 px-3 py-1 text-xs" data-gender="unisex">Унисекс</button>
+            @foreach(['' => 'Любой', 'female' => 'Женский', 'male' => 'Мужской', 'unisex' => 'Унисекс'] as $gKey => $gLabel)
+                <button type="button" class="gender-filter border px-3 py-1 text-xs {{ ($filters['gender'] ?? '') === $gKey ? 'border-black bg-black text-white' : 'border-neutral-300' }}" data-gender="{{ $gKey }}">{{ $gLabel }}</button>
+            @endforeach
+        </div>
+        <p class="mb-2 text-xs font-semibold uppercase tracking-wider text-neutral-500">Цена, ₽</p>
+        <div class="mb-4 flex flex-wrap gap-2">
+            <input type="number" id="filter-price-min" placeholder="от" class="w-24 border border-neutral-300 px-2 py-1.5 text-sm" value="{{ $filters['price_min'] ?? '' }}">
+            <input type="number" id="filter-price-max" placeholder="до" class="w-24 border border-neutral-300 px-2 py-1.5 text-sm" value="{{ $filters['price_max'] ?? '' }}">
+        </div>
+        <p class="mb-2 text-xs font-semibold uppercase tracking-wider text-neutral-500">Размер одежды</p>
+        <div class="mb-3 flex flex-wrap gap-2">
+            <button type="button" class="size-filter border border-neutral-300 px-3 py-1 text-xs {{ ($filters['size'] ?? '') === '' ? 'bg-black text-white' : '' }}" data-size="">Все</button>
+            @foreach(['XXS', 'XS', 'S', 'M', 'L', 'XL', 'XXL'] as $sz)
+                <button type="button" class="size-filter border border-neutral-300 px-3 py-1 text-xs {{ ($filters['size'] ?? '') === $sz ? 'bg-black text-white' : '' }}" data-size="{{ $sz }}">{{ $sz }}</button>
+            @endforeach
+        </div>
+        <p class="mb-2 text-xs font-semibold uppercase tracking-wider text-neutral-500">Размер обуви</p>
+        <div class="mb-4 flex flex-wrap gap-2">
+            @foreach(['36', '37', '38', '39', '40', '41', '42', '43', '44', '45'] as $sz)
+                <button type="button" class="size-filter border border-neutral-300 px-3 py-1 text-xs {{ ($filters['size'] ?? '') === $sz ? 'bg-black text-white' : '' }}" data-size="{{ $sz }}">{{ $sz }}</button>
+            @endforeach
         </div>
         <div class="flex flex-wrap gap-4 text-xs text-neutral-600">
-            <label class="inline-flex items-center gap-2"><input type="checkbox" id="filter-in-stock"> Только в наличии</label>
-            <label class="inline-flex items-center gap-2"><input type="checkbox" id="filter-new"> Только новинки</label>
-            <label class="inline-flex items-center gap-2"><input type="checkbox" id="filter-limited"> Только лимитированные</label>
+            <label class="inline-flex items-center gap-2"><input type="checkbox" id="filter-in-stock" @checked($filters['in_stock'] ?? false)> Только в наличии</label>
+            <label class="inline-flex items-center gap-2"><input type="checkbox" id="filter-new" @checked($filters['new'] ?? false)> Только новинки</label>
+            <label class="inline-flex items-center gap-2"><input type="checkbox" id="filter-limited" @checked($filters['limited'] ?? false)> Только лимитированные</label>
         </div>
+        <button type="button" id="filter-apply" class="mt-4 w-full bg-black py-2.5 text-xs font-semibold uppercase tracking-wider text-white sm:w-auto sm:px-8">Применить фильтры</button>
     </div>
+
+    @if($products->isEmpty())
+        <x-empty-state class="mt-8" title="Ничего не найдено" description="Сбросьте фильтры или измените параметры поиска.">
+            <a href="{{ route('catalog') }}" class="inline-flex min-h-11 items-center justify-center border border-neutral-300 px-6 text-xs font-semibold uppercase tracking-[0.2em]">Сбросить</a>
+        </x-empty-state>
+    @endif
 
     <div id="skeleton-grid" class="mt-6 grid grid-cols-2 gap-x-[clamp(0.75rem,2vw,1.25rem)] gap-y-8 min-[520px]:grid-cols-[repeat(auto-fill,minmax(11rem,1fr))] xl:grid-cols-4 xl:gap-y-10">
         @for ($i = 0; $i < 8; $i++)
@@ -67,7 +83,7 @@
         @endfor
     </div>
 
-    <div id="products-grid" class="mt-6 hidden grid-cols-2 gap-x-[clamp(0.75rem,2vw,1.25rem)] gap-y-10 min-[520px]:grid-cols-[repeat(auto-fill,minmax(11rem,1fr))] xl:grid-cols-4 xl:gap-y-12">
+    <div id="products-grid" class="mt-6 {{ $products->isEmpty() ? 'hidden' : 'hidden' }} grid-cols-2 gap-x-[clamp(0.75rem,2vw,1.25rem)] gap-y-10 min-[520px]:grid-cols-[repeat(auto-fill,minmax(11rem,1fr))] xl:grid-cols-4 xl:gap-y-12">
         @foreach($products as $product)
             <article class="product-card group"
                      data-product='@json($product)'
@@ -81,6 +97,7 @@
                      data-price="{{ $product->saleUnitPrice() }}"
                      data-sale="{{ $product->hasSale() ? '1' : '0' }}"
                      data-name="{{ $product->name }}"
+                     data-sizes="{{ implode(',', $product->inStockSizes()) }}"
                      data-created="{{ $product->created_at?->timestamp ?? 0 }}">
                 <div class="relative aspect-[3/4] overflow-hidden bg-neutral-100">
                     <a href="{{ route('products.show', $product->slug) }}" class="absolute inset-0 z-0" aria-label="{{ $product->name }}"></a>
@@ -114,11 +131,15 @@
 
     @push('scripts')
     <script>
+        const searchInput = document.getElementById('product-search');
+
         setTimeout(() => {
             document.getElementById('skeleton-grid')?.classList.add('hidden');
             const grid = document.getElementById('products-grid');
-            grid?.classList.remove('hidden');
-            grid?.classList.add('grid');
+            if (grid && grid.querySelector('.product-card')) {
+                grid.classList.remove('hidden');
+                grid.classList.add('grid');
+            }
         }, 450);
 
         document.querySelectorAll('.favorite-btn').forEach((btn) => {
@@ -150,27 +171,44 @@
             });
         });
 
-        let activeCategory = '';
-        let selectedColor = '';
-        let selectedGender = '';
-        let sortMode = 'new';
-        let inStockOnly = false;
-        let onlyNew = false;
-        let onlyLimited = false;
-        const cards = () => [...document.querySelectorAll('#products-grid .product-card')];
-        const productData = () => cards().map(c => JSON.parse(c.dataset.product));
-        let fuse;
-        function buildFuse() {
-            fuse = new Fuse(productData(), { keys: ['name', 'description'], threshold: 0.38 });
-        }
-        buildFuse();
+        let activeCategory = @json($filters['cat'] ?? '');
+        let selectedGender = @json($filters['gender'] ?? '');
+        let selectedSize = @json($filters['size'] ?? '');
+        let sortMode = @json($filters['sort'] ?? 'new');
+        let inStockOnly = @json($filters['in_stock'] ?? false);
+        let onlyNew = @json($filters['new'] ?? false);
+        let onlyLimited = @json($filters['limited'] ?? false);
 
-        (function applyCategoryFromQuery() {
-            const cat = new URLSearchParams(window.location.search).get('cat');
-            if (!cat) return;
-            const tab = [...document.querySelectorAll('.category-tab')].find((b) => (b.dataset.cat || '') === cat);
-            tab?.click();
-        })();
+        function buildCatalogUrl() {
+            const p = new URLSearchParams();
+            if (activeCategory) p.set('cat', activeCategory);
+            if (sortMode && sortMode !== 'new') p.set('sort', sortMode);
+            if (selectedGender) p.set('gender', selectedGender);
+            if (selectedSize) p.set('size', selectedSize);
+            const q = searchInput?.value?.trim();
+            if (q) p.set('q', q);
+            if (inStockOnly) p.set('in_stock', '1');
+            if (onlyNew) p.set('new', '1');
+            if (onlyLimited) p.set('limited', '1');
+            const pmin = document.getElementById('filter-price-min')?.value;
+            const pmax = document.getElementById('filter-price-max')?.value;
+            if (pmin) p.set('price_min', pmin);
+            if (pmax) p.set('price_max', pmax);
+            const qs = p.toString();
+            return '{{ route('catalog') }}' + (qs ? '?' + qs : '');
+        }
+
+        function reloadCatalog() {
+            window.location.assign(buildCatalogUrl());
+        }
+
+        document.querySelectorAll('.category-tab').forEach((b) => {
+            const on = (b.dataset.cat || '') === activeCategory;
+            b.classList.toggle('bg-black', on);
+            b.classList.toggle('text-white', on);
+            b.classList.toggle('bg-white', !on);
+            b.classList.toggle('text-black', !on);
+        });
 
         document.querySelectorAll('.category-tab').forEach((btn) => {
             btn.addEventListener('click', () => {
@@ -182,9 +220,21 @@
                     b.classList.toggle('bg-white', !on);
                     b.classList.toggle('text-black', !on);
                 });
-                applyFilters();
+                reloadCatalog();
             });
         });
+
+        document.querySelectorAll('.size-filter').forEach((btn) => {
+            btn.addEventListener('click', () => {
+                selectedSize = btn.dataset.size || '';
+                document.querySelectorAll('.size-filter').forEach((b) => {
+                    b.classList.toggle('bg-black', b === btn);
+                    b.classList.toggle('text-white', b === btn);
+                });
+            });
+        });
+
+        document.getElementById('filter-apply')?.addEventListener('click', reloadCatalog);
 
         document.getElementById('sort-toggle')?.addEventListener('click', () => {
             document.getElementById('sort-panel')?.classList.toggle('hidden');
@@ -196,79 +246,31 @@
         document.querySelectorAll('.sort-btn').forEach((btn) => {
             btn.addEventListener('click', () => {
                 sortMode = btn.dataset.sort || 'new';
-                applyFilters();
+                reloadCatalog();
             });
         });
 
-        document.querySelectorAll('.color-filter').forEach((btn) => {
-            btn.addEventListener('click', () => {
-                selectedColor = btn.dataset.color || '';
-                applyFilters();
-            });
-        });
         document.querySelectorAll('.gender-filter').forEach((btn) => {
             btn.addEventListener('click', () => {
                 selectedGender = btn.dataset.gender || '';
-                applyFilters();
+                reloadCatalog();
             });
         });
         document.getElementById('filter-in-stock')?.addEventListener('change', (e) => {
             inStockOnly = !!e.target?.checked;
-            applyFilters();
         });
         document.getElementById('filter-new')?.addEventListener('change', (e) => {
             onlyNew = !!e.target?.checked;
-            applyFilters();
         });
         document.getElementById('filter-limited')?.addEventListener('change', (e) => {
             onlyLimited = !!e.target?.checked;
-            applyFilters();
         });
 
-        document.querySelectorAll('.swatch-dot').forEach((dot) => {
-            const color = dot.dataset.swatch || '';
-            if (color.startsWith('#')) {
-                dot.style.backgroundColor = color;
-            }
+        let searchTimer;
+        searchInput?.addEventListener('input', () => {
+            clearTimeout(searchTimer);
+            searchTimer = setTimeout(reloadCatalog, 500);
         });
-
-        const searchInput = document.getElementById('product-search');
-        searchInput?.addEventListener('input', applyFilters);
-
-        function applyFilters() {
-            const q = searchInput?.value?.trim() || '';
-            const ids = q ? fuse.search(q).map(r => r.item.id) : productData().map(p => p.id);
-            const idSet = new Set(ids);
-
-            cards().forEach((card) => {
-                const item = JSON.parse(card.dataset.product);
-                const catOk = !activeCategory || card.dataset.category === activeCategory;
-                const colorOk = !selectedColor || card.dataset.color === selectedColor;
-                const genderOk = !selectedGender || card.dataset.gender === selectedGender;
-                const stockOk = !inStockOnly || Number(card.dataset.stock) > 0;
-                const newOk = !onlyNew || card.dataset.new === '1';
-                const limitedOk = !onlyLimited || card.dataset.limited === '1';
-                card.classList.toggle('hidden', !(idSet.has(item.id) && catOk && colorOk && genderOk && stockOk && newOk && limitedOk));
-            });
-
-            sortCards();
-        }
-
-        function sortCards() {
-            const grid = document.getElementById('products-grid');
-            if (!grid) return;
-            const list = [...grid.querySelectorAll('.product-card')];
-            const cmp = (a, b) => {
-                if (sortMode === 'price-asc') return Number(a.dataset.price) - Number(b.dataset.price);
-                if (sortMode === 'price-desc') return Number(b.dataset.price) - Number(a.dataset.price);
-                if (sortMode === 'name') return a.dataset.name.localeCompare(b.dataset.name);
-                return Number(b.dataset.created) - Number(a.dataset.created);
-            };
-            list.sort(cmp);
-            list.forEach((el) => grid.appendChild(el));
-        }
-
-        applyFilters();
     </script>
     @endpush
     </div>

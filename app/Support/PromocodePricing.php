@@ -3,6 +3,8 @@
 namespace App\Support;
 
 use App\Models\Promocode;
+use App\Models\User;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
 
 final class PromocodePricing
@@ -20,7 +22,7 @@ final class PromocodePricing
             ->first();
     }
 
-    public static function redeemable(Promocode $promocode): bool
+    public static function redeemable(Promocode $promocode, ?User $user = null): bool
     {
         if ($promocode->expires_at && $promocode->expires_at->isPast()) {
             return false;
@@ -31,7 +33,26 @@ final class PromocodePricing
             return false;
         }
 
+        $user ??= Auth::user();
+
+        if ($promocode->user_id && $user && (int) $promocode->user_id !== (int) $user->id) {
+            return false;
+        }
+
+        if ($promocode->user_id && ! $user) {
+            return false;
+        }
+
         return true;
+    }
+
+    public static function meetsMinimumOrder(Promocode $promocode, float $subtotal): bool
+    {
+        if ($promocode->min_order_total === null) {
+            return true;
+        }
+
+        return $subtotal >= (float) $promocode->min_order_total;
     }
 
     public static function discountAmount(float $subtotal, Promocode $promocode): float
@@ -78,6 +99,12 @@ final class PromocodePricing
         if (! self::redeemable($promo)) {
             return $base + [
                 'message' => 'Промокод истёк или недоступен.',
+            ];
+        }
+
+        if (! self::meetsMinimumOrder($promo, $subtotal)) {
+            return $base + [
+                'message' => 'Минимальная сумма заказа для промокода: '.number_format((float) $promo->min_order_total, 0, '.', ' ').' ₽.',
             ];
         }
 

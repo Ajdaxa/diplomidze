@@ -4,10 +4,14 @@
 @section('meta_description', \Illuminate\Support\Str::limit($product->description ?: $product->name, 155))
 
 @php
-$sizes = $product->sizesList();
+$displaySizes = $product->displaySizeGrid();
+$inStockSizes = $product->inStockSizes();
+$inStockLookup = array_flip($inStockSizes);
 $categoryLabel = $product->categoryModel?->name ?? (\App\Models\Product::CATEGORIES[$product->category] ?? $product->category);
 $categorySlug = $product->category_slug;
 $catalogCategoryUrl = route('catalog').'?cat='.rawurlencode($categorySlug);
+$rc = $reviewsCount;
+$reviewCountLabel = (($rc % 10 === 1) && ($rc % 100 !== 11)) ? 'отзыв' : (in_array($rc % 10, [2, 3, 4], true) && ! in_array($rc % 100, [12, 13, 14], true) ? 'отзыва' : 'отзывов');
 @endphp
 
 @section('content')
@@ -38,9 +42,10 @@ $catalogCategoryUrl = route('catalog').'?cat='.rawurlencode($categorySlug);
 </nav>
 
 <div class="grid grid-cols-1 gap-8 sm:gap-10 lg:grid-cols-2 lg:items-start lg:gap-12 xl:gap-16">
-    <div class="relative aspect-[3/4] overflow-hidden bg-neutral-100 sm:aspect-[3/4] lg:sticky lg:top-20 lg:aspect-auto lg:min-h-[min(85vh,40rem)] xl:min-h-[640px]">
-        <img src="{{ $product->image ?: 'https://picsum.photos/1000/1333?random='.$product->id }}" alt="{{ $product->name }}" class="absolute inset-0 h-full w-full object-cover">
-        <x-product-badge :product="$product" class="left-4 top-4" />
+    <div class="lg:sticky lg:top-20 lg:self-start">
+        <div class="relative aspect-[3/4] overflow-hidden rounded-xl bg-neutral-100 lg:min-h-[min(85vh,40rem)] xl:min-h-[640px]">
+            <img id="pdp-main-image" src="{{ $galleryUrls[0] }}" alt="{{ $product->name }}" class="h-full w-full object-cover transition duration-300">
+            <x-product-badge :product="$product" class="left-4 top-4" />
         @auth
         <button type="button" class="favorite-btn absolute bottom-4 right-4 z-10 flex h-11 w-11 min-h-[2.75rem] min-w-[2.75rem] items-center justify-center rounded-full border border-neutral-200 bg-white/90 shadow-sm backdrop-blur-sm {{ $isFavorite ? 'text-red-600' : '' }}" data-id="{{ $product->id }}" data-active="{{ $isFavorite ? '1' : '0' }}">
             <svg class="heart-icon h-6 w-6" fill="{{ $isFavorite ? 'currentColor' : 'none' }}" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
@@ -54,6 +59,16 @@ $catalogCategoryUrl = route('catalog').'?cat='.rawurlencode($categorySlug);
             </svg>
         </a>
         @endauth
+        </div>
+        @if(count($galleryUrls) > 1)
+            <div class="mt-3 flex gap-2 overflow-x-auto pb-1" role="tablist" aria-label="Фото товара">
+                @foreach($galleryUrls as $i => $url)
+                    <button type="button" class="pdp-thumb shrink-0 overflow-hidden rounded-lg border-2 {{ $i === 0 ? 'border-black' : 'border-transparent' }}" data-url="{{ $url }}" aria-label="Фото {{ $i + 1 }}">
+                        <img src="{{ $url }}" alt="" class="h-16 w-14 object-cover sm:h-20 sm:w-16">
+                    </button>
+                @endforeach
+            </div>
+        @endif
     </div>
 
     <div class="flex min-w-0 flex-col justify-center px-0 sm:px-1 lg:max-w-xl">
@@ -78,7 +93,7 @@ $catalogCategoryUrl = route('catalog').'?cat='.rawurlencode($categorySlug);
             <x-product-price :product="$product" size="lg" />
         </div>
         @if($product->stock < 1)
-            <p class="mt-2 text-xs font-semibold uppercase tracking-wider text-rose-700">Нет в наличии</p>
+            <p class="mt-4 text-xs font-semibold uppercase tracking-wider text-rose-700">Нет в наличии</p>
         @elseif($product->stock < 4)
             <p class="mt-2 text-xs font-semibold uppercase tracking-wider text-amber-700">Осталось: {{ $product->stock }}</p>
         @endif
@@ -128,20 +143,27 @@ $catalogCategoryUrl = route('catalog').'?cat='.rawurlencode($categorySlug);
             <div>
                 <p class="mb-3 text-xs font-semibold uppercase tracking-wider text-neutral-900">Размер <span class="text-red-600">*</span></p>
                 <div class="flex flex-wrap gap-2">
-                    @foreach($sizes as $sz)
-                    <label class="cursor-pointer">
-                        <input type="radio" name="size" value="{{ $sz }}" class="peer sr-only" required>
-                        <span class="flex min-h-11 min-w-[3rem] items-center justify-center border border-neutral-900 px-4 py-2.5 text-xs font-semibold uppercase tracking-wide peer-checked:bg-black peer-checked:text-white peer-focus-visible:ring-2 peer-focus-visible:ring-neutral-400">{{ $sz }}</span>
-                    </label>
+                    @foreach($displaySizes as $sz)
+                        @if(isset($inStockLookup[$sz]))
+                            <label class="cursor-pointer">
+                                <input type="radio" name="size" value="{{ $sz }}" class="peer sr-only" required>
+                                <span class="flex min-h-11 min-w-[3rem] items-center justify-center border border-neutral-900 bg-white px-4 py-2.5 text-xs font-semibold uppercase tracking-wide transition peer-checked:bg-black peer-checked:text-white peer-focus-visible:ring-2 peer-focus-visible:ring-neutral-400">{{ $sz }}</span>
+                            </label>
+                        @else
+                            <span class="flex min-h-11 min-w-[3rem] cursor-not-allowed items-center justify-center border border-neutral-200 bg-neutral-100 px-4 py-2.5 text-xs font-semibold uppercase tracking-wide text-neutral-400 line-through decoration-neutral-300" aria-disabled="true" title="Нет в наличии">{{ $sz }}</span>
+                        @endif
                     @endforeach
                 </div>
+                @if($inStockSizes === [])
+                    <p class="mt-2 text-xs text-neutral-500">Нет доступных размеров.</p>
+                @endif
             </div>
             <div class="relative w-full max-w-[7.5rem]">
                 <input type="number" name="quantity" id="product-qty" value="1" min="1" max="20" step="1" placeholder=" " class="peer block w-full rounded-xl border border-neutral-200 bg-white px-3.5 pb-2.5 pt-5 text-sm text-neutral-900 shadow-sm outline-none transition-[border-color,box-shadow] duration-200 ease-out placeholder:text-transparent focus:border-black focus:ring-2 focus:ring-black/[0.06]">
                 <label for="product-qty" class="pointer-events-none absolute left-3.5 top-1/2 origin-left -translate-y-1/2 text-[15px] text-neutral-500 transition-all duration-200 ease-out peer-focus:top-2 peer-focus:translate-y-0 peer-focus:text-[11px] peer-focus:font-medium peer-focus:tracking-wide peer-focus:text-neutral-700 peer-[:not(:placeholder-shown)]:top-2 peer-[:not(:placeholder-shown)]:translate-y-0 peer-[:not(:placeholder-shown)]:text-[11px] peer-[:not(:placeholder-shown)]:font-medium peer-[:not(:placeholder-shown)]:tracking-wide peer-[:not(:placeholder-shown)]:text-neutral-700">Количество</label>
             </div>
-            <button type="submit" id="add-cart-btn" data-sold-out="{{ $product->stock < 1 ? '1' : '0' }}" @disabled($product->stock < 1) class="w-full min-h-12 bg-black py-3.5 text-xs font-semibold uppercase tracking-[0.2em] text-white transition enabled:hover:bg-neutral-800 disabled:cursor-not-allowed disabled:bg-neutral-300 sm:min-h-[3.25rem] sm:py-4">
-                {{ $product->stock < 1 ? 'Нет в наличии' : 'Выберите размер' }}
+            <button type="submit" id="add-cart-btn" data-sold-out="{{ ($product->stock < 1 || $inStockSizes === []) ? '1' : '0' }}" @disabled($product->stock < 1 || $inStockSizes === []) class="w-full min-h-12 bg-black py-3.5 text-xs font-semibold uppercase tracking-[0.2em] text-white transition enabled:hover:bg-neutral-800 disabled:cursor-not-allowed disabled:bg-neutral-300 sm:min-h-[3.25rem] sm:py-4">
+                {{ $product->stock < 1 || $inStockSizes === [] ? 'Нет в наличии' : 'Выберите размер' }}
             </button>
         </form>
         @else
@@ -163,9 +185,86 @@ $catalogCategoryUrl = route('catalog').'?cat='.rawurlencode($categorySlug);
     </div>
 </div>
 
+<section class="mt-16 border-t border-neutral-200 pt-12" id="reviews">
+    <div class="flex flex-wrap items-end justify-between gap-4">
+        <div>
+            <h2 class="text-xs font-semibold uppercase tracking-[0.2em] text-neutral-500">Отзывы</h2>
+            @if($reviewsCount > 0 && $averageRating)
+                <div class="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2">
+                    <div class="flex items-baseline gap-2">
+                        <span class="text-3xl font-semibold tabular-nums leading-none text-neutral-900">{{ $averageRating }}</span>
+                        <span class="text-amber-500 text-lg leading-none" aria-hidden="true">{{ str_repeat('★', (int) round($averageRating)) }}{{ str_repeat('☆', 5 - (int) round($averageRating)) }}</span>
+                    </div>
+                    <p class="text-sm text-neutral-600">{{ $reviewsCount }} {{ $reviewCountLabel }}</p>
+                </div>
+            @else
+                <p class="mt-2 text-sm text-neutral-500">Пока без отзывов</p>
+            @endif
+        </div>
+    </div>
+
+    @auth
+        @if($canReview && ! $userReview)
+            <form method="POST" action="{{ route('reviews.store', $product) }}" class="mt-8 max-w-xl rounded-2xl border border-neutral-200 bg-neutral-50 p-5 sm:p-6">
+                @csrf
+                <p class="text-sm font-medium text-neutral-900">Ваш отзыв</p>
+                <p class="mt-1 text-xs text-neutral-500">Доступно после доставки этого товара. Публикуется после модерации.</p>
+                <div class="mt-4">
+                    <label class="text-[10px] font-semibold uppercase tracking-wider text-neutral-500">Оценка</label>
+                    <select name="rating" required class="mt-1 w-full rounded-lg border border-neutral-300 bg-white px-3 py-2 text-sm">
+                        @for($r = 5; $r >= 1; $r--)
+                            <option value="{{ $r }}" @selected(old('rating') == $r)>{{ $r }} — {{ ['','Плохо','Так себе','Нормально','Хорошо','Отлично'][$r] }}</option>
+                        @endfor
+                    </select>
+                </div>
+                <div class="mt-3">
+                    <label class="text-[10px] font-semibold uppercase tracking-wider text-neutral-500">Комментарий</label>
+                    <textarea name="body" rows="3" class="mt-1 w-full rounded-lg border border-neutral-300 bg-white px-3 py-2 text-sm" placeholder="Необязательно">{{ old('body') }}</textarea>
+                </div>
+                @error('review')<p class="mt-2 text-xs text-rose-600">{{ $message }}</p>@enderror
+                <button type="submit" class="mt-4 inline-flex min-h-10 items-center bg-black px-5 text-xs font-semibold uppercase tracking-wider text-white">Отправить</button>
+            </form>
+        @elseif($userReview)
+            <p class="mt-6 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+                Ваш отзыв на модерации или уже опубликован (статус: {{ $userReview->status === 'approved' ? 'опубликован' : ($userReview->status === 'rejected' ? 'отклонён' : 'на проверке') }}).
+            </p>
+        @endif
+    @else
+        <p class="mt-6 text-sm text-neutral-600"><a href="{{ route('otp.form') }}" class="underline">Войдите</a>, чтобы оставить отзыв после покупки.</p>
+    @endauth
+
+    <div class="mt-8 space-y-6">
+        @forelse($reviews as $review)
+            <article class="rounded-xl border border-neutral-200 bg-white p-5">
+                <div class="flex items-center justify-between gap-3">
+                    <p class="text-sm font-medium text-neutral-900">{{ $review->user?->name ?? 'Покупатель' }}</p>
+                    <p class="text-amber-500 text-sm" aria-label="Оценка {{ $review->rating }} из 5">{{ str_repeat('★', $review->rating) }}</p>
+                </div>
+                @if($review->body)
+                    <p class="mt-3 text-sm leading-relaxed text-neutral-600">{{ $review->body }}</p>
+                @endif
+                <p class="mt-2 text-[10px] text-neutral-400">{{ $review->created_at->format('d.m.Y') }}</p>
+            </article>
+        @empty
+            <p class="text-sm text-neutral-500">Станьте первым, кто поделится впечатлением после покупки.</p>
+        @endforelse
+    </div>
+</section>
+
 @push('scripts')
 <script>
     (function() {
+        const mainImg = document.getElementById('pdp-main-image');
+        document.querySelectorAll('.pdp-thumb').forEach((btn) => {
+            btn.addEventListener('click', () => {
+                const url = btn.dataset.url;
+                if (mainImg) mainImg.src = url;
+                document.querySelectorAll('.pdp-thumb').forEach((t) => {
+                    t.classList.toggle('border-black', t === btn);
+                    t.classList.toggle('border-transparent', t !== btn);
+                });
+            });
+        });
         document.getElementById('copy-sku-btn')?.addEventListener('click', async () => {
             const sku = document.getElementById('copy-sku-btn')?.dataset.sku;
             if (!sku) return;

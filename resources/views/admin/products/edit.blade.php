@@ -42,8 +42,14 @@
             <p class="text-xs text-neutral-500">Скидку задайте в <a href="{{ route('admin.sales.index') }}" class="underline">«Скидки на товары»</a>.</p>
         @endif
         <div>
-            <label class="mb-1 block text-xs font-semibold uppercase tracking-wider">Размеры (через запятую)</label>
-            <input name="available_sizes" class="w-full rounded border border-neutral-300 px-3 py-2" value="{{ old('available_sizes', is_array($product->available_sizes) ? implode(', ', $product->available_sizes) : '') }}">
+            <label class="mb-1 block text-xs font-semibold uppercase tracking-wider">Размеры в наличии</label>
+            <input name="available_sizes" class="w-full rounded border border-neutral-300 px-3 py-2" value="{{ old('available_sizes', is_array($product->available_sizes) ? implode(', ', $product->available_sizes) : '') }}" placeholder="S, M (только то, что есть на складе)">
+            <p class="mt-1 text-[11px] text-neutral-500">Для одежды: XS, S, M… Для обуви: 36, 37, 38… Указывайте только размеры, которые реально есть.</p>
+        </div>
+        <div>
+            <label class="mb-1 block text-xs font-semibold uppercase tracking-wider">Остаток по размерам (точнее)</label>
+            <input name="size_stock" class="w-full rounded border border-neutral-300 px-3 py-2 font-mono text-sm" value="{{ old('size_stock', is_array($product->size_stock) ? collect($product->size_stock)->map(fn ($q, $s) => $s.':'.$q)->implode(', ') : '') }}" placeholder="S:1, M:2, 42:1">
+            <p class="mt-1 text-[11px] text-neutral-500">Формат S:кол-во. Если заполнено — витрина берёт данные отсюда.</p>
         </div>
         <div class="grid grid-cols-2 gap-4">
             <div>
@@ -78,6 +84,10 @@
         <div>
             <label class="mb-1 block text-xs font-semibold uppercase tracking-wider">или загрузите новый файл (hover)</label>
             <input type="file" name="secondary_image_file" accept="image/*" class="w-full rounded border border-neutral-300 px-3 py-2">
+        </div>
+        <div>
+            <label class="mb-1 block text-xs font-semibold uppercase tracking-wider">Галерея (URL, по одному на строку)</label>
+            <textarea name="gallery_images" rows="4" class="w-full rounded border border-neutral-300 px-3 py-2 font-mono text-xs" placeholder="https://...">{{ old('gallery_images', is_array($product->gallery_images) ? implode("\n", $product->gallery_images) : '') }}</textarea>
         </div>
         <div>
             <label class="mb-1 block text-xs font-semibold uppercase tracking-wider">Описание</label>

@@ -49,7 +49,16 @@
                     </div>
                 </div>
             @empty
-                <div class="p-12 text-center text-sm text-neutral-500">Корзина пуста. Загляните в <a href="{{ route('catalog') }}" class="underline">каталог</a>.</div>
+                <div class="p-4 sm:p-6">
+                    <x-empty-state
+                        icon="cart"
+                        title="Корзина пуста"
+                        description="Добавьте вещи из каталога — они появятся здесь, когда вы будете готовы оформить заказ."
+                    >
+                        <a href="{{ route('catalog') }}" class="inline-flex min-h-11 items-center justify-center bg-black px-6 text-xs font-semibold uppercase tracking-[0.2em] text-white hover:bg-neutral-800">В каталог</a>
+                        <a href="{{ route('home') }}" class="inline-flex min-h-11 items-center justify-center border border-neutral-300 px-6 text-xs font-semibold uppercase tracking-[0.2em] text-neutral-800 hover:border-black">На главную</a>
+                    </x-empty-state>
+                </div>
             @endforelse
         </div>
 

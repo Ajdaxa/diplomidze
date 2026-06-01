@@ -6,6 +6,11 @@
     <div class="mx-auto w-full max-w-5xl">
         <x-page-heading title="Оформление" lede="Доставка и оплата через YooMoney" />
 
+        @if($items->isEmpty())
+            <x-empty-state icon="cart" title="Нечего оформлять" description="Сначала добавьте товары в корзину.">
+                <a href="{{ route('catalog') }}" class="inline-flex min-h-11 items-center justify-center bg-black px-6 text-xs font-semibold uppercase tracking-[0.2em] text-white">В каталог</a>
+            </x-empty-state>
+        @else
         <div class="grid gap-8 lg:grid-cols-5 lg:gap-10">
             <div class="order-2 lg:order-1 lg:col-span-2">
                 <div class="border border-neutral-200 bg-white p-4 sm:p-6 lg:sticky lg:top-20">
@@ -41,6 +46,10 @@
                             <span>Промокод</span>
                             <span id="checkout-promo-discount">—</span>
                         </div>
+                        <div id="checkout-loyalty-discount-row" class="hidden justify-between text-sky-700">
+                            <span>Баллы лояльности</span>
+                            <span id="checkout-loyalty-discount">—</span>
+                        </div>
                         <div class="flex justify-between border-t border-neutral-200 pt-4 text-base font-bold">
                             <span>К оплате</span>
                             <span id="checkout-total">{{ number_format($cartTotal, 0, '.', ' ') }} ₽</span>
@@ -62,10 +71,31 @@
                         <div id="address-suggestions" class="mt-2 max-h-48 space-y-1 overflow-y-auto"></div>
                     </div>
                     <x-floating-input id="checkout-promocode" name="promocode" label="Промокод (необязательно)" :value="old('promocode')" autocomplete="off" />
+                    @if($loyaltyPoints > 0 && $maxLoyaltySpend > 0)
+                        <div class="rounded-xl border border-neutral-200 bg-neutral-50 p-4">
+                            <p class="text-xs font-semibold uppercase tracking-wider text-neutral-500">Баллы</p>
+                            <p class="mt-1 text-sm text-neutral-700">На счёте <strong>{{ number_format($loyaltyPoints, 0, '.', ' ') }}</strong> баллов. Можно списать до <strong>{{ number_format($maxLoyaltySpend, 0, '.', ' ') }} ₽</strong> (30% от суммы заказа).</p>
+                            <label class="mt-4 flex cursor-pointer items-center gap-3">
+                                <input type="checkbox" name="spend_loyalty" value="1" id="checkout-spend-loyalty" class="h-4 w-4 rounded border-neutral-400" @checked(old('spend_loyalty'))>
+                                <span class="text-sm font-medium text-neutral-900">Списать баллы</span>
+                            </label>
+                        </div>
+                    @endif
+                    <div class="space-y-3 rounded-xl border border-neutral-200 bg-neutral-50/80 p-4 text-xs leading-relaxed text-neutral-600">
+                        <label class="flex cursor-pointer items-start gap-3">
+                            <input type="checkbox" name="accept_offer" value="1" required class="mt-0.5 rounded border-neutral-400" @checked(old('accept_offer'))>
+                            <span>Я принимаю условия <a href="{{ route('pages.offer') }}" target="_blank" class="font-medium text-neutral-900 underline">публичной оферты</a></span>
+                        </label>
+                        <label class="flex cursor-pointer items-start gap-3">
+                            <input type="checkbox" name="accept_privacy" value="1" required class="mt-0.5 rounded border-neutral-400" @checked(old('accept_privacy'))>
+                            <span>Я согласен с <a href="{{ route('pages.privacy') }}" target="_blank" class="font-medium text-neutral-900 underline">политикой конфиденциальности</a></span>
+                        </label>
+                    </div>
                     <button type="submit" class="w-full rounded-xl bg-black py-4 text-xs font-semibold uppercase tracking-[0.25em] text-white transition hover:bg-neutral-800">Перейти к оплате</button>
                 </form>
             </div>
         </div>
+        @endif
     </div>
 
     @push('scripts')
@@ -115,6 +145,9 @@
             const productDiscEl = document.getElementById('checkout-product-discount');
             const promoDiscRow = document.getElementById('checkout-promo-discount-row');
             const promoDiscEl = document.getElementById('checkout-promo-discount');
+            const loyaltyDiscRow = document.getElementById('checkout-loyalty-discount-row');
+            const loyaltyDiscEl = document.getElementById('checkout-loyalty-discount');
+            const loyaltyCheckbox = document.getElementById('checkout-spend-loyalty');
             const totEl = document.getElementById('checkout-total');
             let t;
             async function preview() {
@@ -122,6 +155,9 @@
                 const params = new URLSearchParams();
                 params.set('_token', csrf || '');
                 params.set('promocode', promoInput?.value?.trim() || '');
+                if (loyaltyCheckbox?.checked) {
+                    params.set('spend_loyalty', '1');
+                }
                 const res = await fetch('{{ route('cart.preview-totals') }}', {
                     method: 'POST',
                     credentials: 'same-origin',
@@ -160,6 +196,14 @@
                     promoDiscRow?.classList.add('hidden');
                     promoDiscRow?.classList.remove('flex');
                 }
+                if (Number(data.loyalty_discount) > 0) {
+                    loyaltyDiscRow?.classList.remove('hidden');
+                    loyaltyDiscRow?.classList.add('flex');
+                    loyaltyDiscEl.textContent = '− ' + fmtRub(data.loyalty_discount);
+                } else {
+                    loyaltyDiscRow?.classList.add('hidden');
+                    loyaltyDiscRow?.classList.remove('flex');
+                }
                 totEl.textContent = fmtRub(data.total);
                 if (data.promocode?.message && promoInput?.value?.trim()) {
                     hint.textContent = data.promocode.message;
@@ -168,10 +212,12 @@
                     hint.classList.toggle('text-emerald-700', data.promocode.valid);
                 }
             }
-            promoInput?.addEventListener('input', () => {
+            const schedulePreview = () => {
                 clearTimeout(t);
                 t = setTimeout(preview, 320);
-            });
+            };
+            promoInput?.addEventListener('input', schedulePreview);
+            loyaltyCheckbox?.addEventListener('change', schedulePreview);
             preview();
         })();
     </script>

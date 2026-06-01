@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Admin\AdminHubController;
+use App\Http\Controllers\Admin\ReviewController as AdminReviewController;
 use App\Http\Controllers\Admin\CategoryController;
 use App\Http\Controllers\Admin\CourierController;
 use App\Http\Controllers\Admin\DashboardController;
@@ -14,6 +15,8 @@ use App\Http\Controllers\CheckoutController;
 use App\Http\Controllers\Courier\CourierOrderController;
 use App\Http\Controllers\OrderCancelController;
 use App\Http\Controllers\FavoriteController;
+use App\Http\Controllers\PageController;
+use App\Http\Controllers\ReviewController;
 use App\Http\Controllers\ProductController as StoreProductController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\StorefrontController;
@@ -23,6 +26,9 @@ use Illuminate\Support\Facades\Route;
 
 Route::get('/', [StorefrontController::class, 'home'])->name('home');
 Route::get('/catalog', [StorefrontController::class, 'catalog'])->name('catalog');
+
+Route::get('/offer', [PageController::class, 'offer'])->name('pages.offer');
+Route::get('/privacy', [PageController::class, 'privacy'])->name('pages.privacy');
 
 Route::get('/products/{product:slug}', [StoreProductController::class, 'show'])->name('products.show');
 
@@ -50,6 +56,7 @@ Route::post('/logout', [OtpAuthController::class, 'logout'])->name('logout');
 Route::middleware('auth')->group(function () {
     Route::get('/favorites', [FavoriteController::class, 'index'])->name('favorites.index');
     Route::post('/favorites/{product}/toggle', [FavoriteController::class, 'toggle'])->name('favorites.toggle');
+    Route::post('/products/{product}/reviews', [ReviewController::class, 'store'])->name('reviews.store');
 
     Route::get('/profile', [ProfileController::class, 'show'])->name('profile.show');
     Route::post('/orders/{order}/cancel', [OrderCancelController::class, 'store'])->name('orders.cancel');
@@ -95,6 +102,10 @@ Route::middleware('auth')->group(function () {
         Route::get('/orders/{order}', [OrderController::class, 'show'])->name('orders.show');
         Route::patch('/orders/{order}/assign-courier', [OrderController::class, 'assignCourier'])->name('orders.assign-courier');
         Route::patch('/orders/{order}/status', [OrderController::class, 'updateStatus'])->name('orders.status');
+        Route::get('/reviews', [AdminReviewController::class, 'index'])->name('reviews.index');
+        Route::patch('/reviews/{review}/approve', [AdminReviewController::class, 'approve'])->name('reviews.approve');
+        Route::patch('/reviews/{review}/reject', [AdminReviewController::class, 'reject'])->name('reviews.reject');
+        Route::delete('/reviews/{review}', [AdminReviewController::class, 'destroy'])->name('reviews.destroy');
     });
 });
 

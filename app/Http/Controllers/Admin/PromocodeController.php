@@ -21,14 +21,19 @@ class PromocodeController extends Controller
     {
         $validated = $request->validate([
             'code' => ['required', 'string', 'max:50', 'unique:promocodes,code'],
+            'purpose' => ['nullable', 'in:standard,referral,loyalty'],
             'type' => ['required', 'in:percent,fixed'],
             'value' => ['required', 'numeric', 'min:1'],
             'max_discount' => ['nullable', 'numeric', 'min:0'],
+            'min_order_total' => ['nullable', 'numeric', 'min:0'],
             'usage_limit' => ['nullable', 'integer', 'min:1'],
             'expires_at' => ['nullable', 'date'],
         ]);
 
-        Promocode::query()->create($validated + ['is_active' => true]);
+        Promocode::query()->create($validated + [
+            'purpose' => $validated['purpose'] ?? Promocode::PURPOSE_STANDARD,
+            'is_active' => true,
+        ]);
 
         return back()->with('status', 'Промокод создан.');
     }

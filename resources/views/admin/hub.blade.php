@@ -18,9 +18,18 @@
             <h2 class="text-sm font-semibold uppercase tracking-wider">Каталог</h2>
             <p class="mt-2 text-xs text-neutral-500">Список товаров, редактирование</p>
         </a>
-        <a href="{{ route('admin.sales.index') }}" class="group rounded-xl border border-rose-100 bg-rose-50/40 p-6 shadow-sm transition hover:border-rose-400">
-            <h2 class="text-sm font-semibold uppercase tracking-wider text-rose-900">Скидки на товары</h2>
-            <p class="mt-2 text-xs text-rose-800/80">Выбор позиций и размер скидки</p>
+        <a href="{{ route('admin.sales.index') }}" class="group rounded-xl border border-neutral-200 bg-white p-6 shadow-sm transition hover:border-black">
+            <h2 class="text-sm font-semibold uppercase tracking-wider">Скидки на товары</h2>
+            <p class="mt-2 text-xs text-neutral-500">Выбор позиций и размер скидки</p>
+        </a>
+        <a href="{{ route('admin.reviews.index') }}" class="group rounded-xl border border-neutral-200 bg-white p-6 shadow-sm transition hover:border-black">
+            <h2 class="text-sm font-semibold uppercase tracking-wider">Отзывы</h2>
+            <p class="mt-2 text-xs text-neutral-500">
+                Модерация
+                @if($pendingReviews > 0)
+                    <span class="ml-1 inline-flex rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold text-amber-900">{{ $pendingReviews }} новых</span>
+                @endif
+            </p>
         </a>
         <a href="{{ route('admin.products.create') }}" class="group rounded-xl border border-neutral-200 bg-white p-6 shadow-sm transition hover:border-black">
             <h2 class="text-sm font-semibold uppercase tracking-wider">Новый товар</h2>

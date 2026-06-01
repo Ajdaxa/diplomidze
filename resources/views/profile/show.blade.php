@@ -6,6 +6,12 @@
     <div class="mx-auto w-full max-w-3xl">
         <x-page-heading title="Профиль" lede="Данные аккаунта и история заказов" />
 
+        <div class="mb-8 rounded-2xl border border-neutral-200 bg-gradient-to-br from-neutral-900 to-neutral-800 p-5 text-white sm:p-6">
+            <p class="text-[10px] font-semibold uppercase tracking-[0.25em] text-white/70">Баллы за покупки</p>
+            <p class="mt-3 text-3xl font-light tabular-nums">{{ number_format($user->loyalty_points, 0, '.', ' ') }} <span class="text-lg">баллов</span></p>
+            <p class="mt-2 max-w-md text-sm text-white/85">5% от суммы каждого оплаченного заказа. При оформлении можно списать все баллы разом — до 30% от суммы заказа (1 балл = 1 ₽).</p>
+        </div>
+
         <div class="mb-8 rounded-2xl border border-neutral-200 bg-white p-4 sm:mb-10 sm:p-6">
             <h2 class="mb-4 text-xs font-semibold uppercase tracking-widest text-neutral-500">Контакты</h2>
             <dl class="grid gap-3 text-sm sm:grid-cols-2">

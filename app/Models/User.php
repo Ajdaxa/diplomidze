@@ -28,6 +28,9 @@ class User extends Authenticatable
         'telegram_link_token',
         'telegram_link_token_expires_at',
         'role',
+        'loyalty_points',
+        'referral_code',
+        'referred_by_user_id',
         'password',
     ];
 
@@ -70,5 +73,20 @@ class User extends Authenticatable
     public function favoriteProducts(): BelongsToMany
     {
         return $this->belongsToMany(Product::class, 'favorite_products')->withTimestamps();
+    }
+
+    public function reviews(): HasMany
+    {
+        return $this->hasMany(Review::class);
+    }
+
+    public function referrer(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    {
+        return $this->belongsTo(self::class, 'referred_by_user_id');
+    }
+
+    public function referrals(): HasMany
+    {
+        return $this->hasMany(self::class, 'referred_by_user_id');
     }
 }

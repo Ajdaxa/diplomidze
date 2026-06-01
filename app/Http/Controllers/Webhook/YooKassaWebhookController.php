@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Webhook;
 use App\Http\Controllers\Controller;
 use App\Models\Order;
 use App\Models\Product;
+use App\Services\LoyaltyService;
 use App\Services\TelegramService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -15,7 +16,7 @@ class YooKassaWebhookController extends Controller
 {
     private const LOG = 'yookassa.webhook';
 
-    public function __invoke(Request $request, TelegramService $telegramService)
+    public function __invoke(Request $request, TelegramService $telegramService, LoyaltyService $loyaltyService)
     {
         $body = $request->all();
         $event = data_get($body, 'event');
@@ -72,7 +73,7 @@ class YooKassaWebhookController extends Controller
         }
 
         try {
-            DB::transaction(function () use ($order, $telegramService): void {
+            DB::transaction(function () use ($order, $telegramService, $loyaltyService): void {
                 $order->refresh();
                 if ($order->status !== 'pending') {
                     Log::channel('single')->info(self::LOG.' race_skip_not_pending', [
@@ -105,9 +106,14 @@ class YooKassaWebhookController extends Controller
                     'paid_at' => now(),
                 ]);
 
+                $order->refresh(['user']);
+
                 if ($order->user?->telegram_chat_id) {
                     $telegramService->orderPaid($order->user->telegram_chat_id, $order->id);
                 }
+
+                $loyaltyService->awardForPaidOrder($order);
+                $telegramService->notifyAdminOrderPaid($order->id, (float) $order->total_price);
 
                 Log::channel('single')->info(self::LOG.' processed_ok', [
                     'order_id' => $order->id,

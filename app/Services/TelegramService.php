@@ -74,6 +74,41 @@ class TelegramService
         $this->sendMessage($chatId, "Заказ #{$orderId} оплачен! Начинаем собирать.", 'System Notification');
     }
 
+    public function orderStatusForCustomer(string $chatId, int $orderId, string $statusLabel): void
+    {
+        $this->sendMessage(
+            $chatId,
+            "Заказ <b>#{$orderId}</b>: {$statusLabel}",
+            'Order status'
+        );
+    }
+
+    public function notifyAdmin(string $message): void
+    {
+        $chatId = config('services.telegram.admin_chat_id');
+        if (! $chatId) {
+            Log::info('Telegram admin notify skipped: TELEGRAM_ADMIN_CHAT_ID not set');
+
+            return;
+        }
+
+        $this->sendMessage((string) $chatId, $message, 'Admin notification');
+    }
+
+    public function notifyAdminNewOrder(int $orderId, float $total, string $customerName): void
+    {
+        $totalFormatted = number_format($total, 0, '.', ' ');
+        $this->notifyAdmin(
+            "🛍 <b>Новый заказ #{$orderId}</b>\nКлиент: {$customerName}\nСумма: {$totalFormatted} ₽\nСтатус: ожидает оплату"
+        );
+    }
+
+    public function notifyAdminOrderPaid(int $orderId, float $total): void
+    {
+        $totalFormatted = number_format($total, 0, '.', ' ');
+        $this->notifyAdmin("✅ <b>Оплачен заказ #{$orderId}</b>\nСумма: {$totalFormatted} ₽");
+    }
+
     public function orderDelivered(string $chatId): void
     {
         $this->sendMessage($chatId, 'Спасибо за покупку в ДЯБ! Носи с удовольствием.', 'System Notification');

@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Services\LoyaltyService;
 use App\Services\TelegramService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
@@ -14,8 +15,10 @@ use Illuminate\Validation\ValidationException;
 
 class OtpAuthController extends Controller
 {
-    public function __construct(private readonly TelegramService $telegramService)
-    {
+    public function __construct(
+        private readonly TelegramService $telegramService,
+        private readonly LoyaltyService $loyaltyService,
+    ) {
     }
 
     public function showForm(Request $request)
@@ -130,11 +133,12 @@ class OtpAuthController extends Controller
         }
 
         Auth::loginUsingId($payload['user_id'], remember: true);
+        $user = Auth::user();
         Cache::forget(session('otp_cache_key'));
 
         session()->forget(['otp_cache_key']);
 
-        return $this->redirectByRole(Auth::user())
+        return $this->redirectByRole($user)
             ->with('status', 'Успешно авторизировались.')
             ->with('status_type', 'success');
     }
@@ -169,7 +173,7 @@ class OtpAuthController extends Controller
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:120'],
             'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
-            'phone' => ['nullable', 'string', 'max:30', 'unique:users,phone'],
+            'phone' => ['required', 'string', 'max:30', 'unique:users,phone'],
             'password' => ['required', 'string', 'min:6', 'confirmed'],
         ]);
 

@@ -33,10 +33,12 @@ class Product extends Model
         'stock',
         'image',
         'secondary_image',
+        'gallery_images',
         'color',
         'gender',
         'size',
         'available_sizes',
+        'size_stock',
         'is_new_collection',
         'is_limited_edition',
         'is_active',
@@ -47,8 +49,48 @@ class Product extends Model
         'is_new_collection' => 'bool',
         'is_limited_edition' => 'bool',
         'available_sizes' => 'array',
+        'size_stock' => 'array',
+        'gallery_images' => 'array',
         'sale_percent' => 'integer',
     ];
+
+    public function reviews(): HasMany
+    {
+        return $this->hasMany(Review::class);
+    }
+
+    public function approvedReviews(): HasMany
+    {
+        return $this->reviews()->where('status', Review::STATUS_APPROVED);
+    }
+
+    /** @return list<string> */
+    public function galleryUrls(): array
+    {
+        $urls = [];
+        foreach ([$this->image, $this->secondary_image] as $url) {
+            if (filled($url) && ! in_array($url, $urls, true)) {
+                $urls[] = (string) $url;
+            }
+        }
+
+        if (is_array($this->gallery_images)) {
+            foreach ($this->gallery_images as $url) {
+                if (filled($url) && ! in_array($url, $urls, true)) {
+                    $urls[] = (string) $url;
+                }
+            }
+        }
+
+        return $urls !== [] ? $urls : ['https://picsum.photos/1000/1333?random='.$this->id];
+    }
+
+    public function averageRating(): ?float
+    {
+        $avg = $this->approvedReviews()->avg('rating');
+
+        return $avg !== null ? round((float) $avg, 1) : null;
+    }
 
     public function hasSale(): bool
     {
@@ -118,20 +160,27 @@ class Product extends Model
         return (string) ($this->attributes['category'] ?? 'clothes');
     }
 
-    /** @return list<string> */
+    /** @return list<string> Размеры, которые можно положить в корзину. */
     public function sizesList(): array
     {
-        $sizes = $this->available_sizes;
+        return \App\Support\ProductSizes::selectable($this);
+    }
 
-        if (is_array($sizes) && $sizes !== []) {
-            return array_values(array_map('strval', $sizes));
-        }
+    /** @return list<string> Сетка для отображения на карточке товара. */
+    public function displaySizeGrid(): array
+    {
+        return \App\Support\ProductSizes::displayGrid($this);
+    }
 
-        if (! empty($this->size)) {
-            return [strtoupper((string) $this->size)];
-        }
+    /** @return list<string> */
+    public function inStockSizes(): array
+    {
+        return \App\Support\ProductSizes::inStock($this);
+    }
 
-        return ['XS', 'S', 'M', 'L', 'XL'];
+    public function isSizeAvailable(string $size): bool
+    {
+        return in_array(strtoupper(trim($size)), $this->inStockSizes(), true);
     }
 
     /** @return list<string> */

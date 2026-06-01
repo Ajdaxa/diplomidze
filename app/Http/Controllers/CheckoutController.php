@@ -6,6 +6,8 @@ use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Product;
 use App\Services\DaDataService;
+use App\Services\LoyaltyService;
+use App\Services\TelegramService;
 use App\Services\YooKassaService;
 use App\Support\CartPricing;
 use App\Support\PromocodePricing;
@@ -18,6 +20,8 @@ class CheckoutController extends Controller
     public function __construct(
         private readonly DaDataService $daDataService,
         private readonly YooKassaService $yooKassaService,
+        private readonly LoyaltyService $loyaltyService,
+        private readonly TelegramService $telegramService,
     ) {
     }
 
@@ -29,7 +33,8 @@ class CheckoutController extends Controller
     public function create()
     {
         $items = $this->buildCartItems();
-        $summary = CartPricing::summarize($items);
+        $user = Auth::user();
+        $summary = CartPricing::summarize($items, old('promocode'), (bool) old('spend_loyalty'), $user);
 
         return view('checkout.create', [
             'items' => $items,
@@ -37,6 +42,8 @@ class CheckoutController extends Controller
             'catalogSubtotal' => $summary['catalog_subtotal'],
             'productDiscount' => $summary['product_discount'],
             'subtotal' => $summary['subtotal'],
+            'loyaltyPoints' => (int) $user->loyalty_points,
+            'maxLoyaltySpend' => $this->loyaltyService->maxSpendablePoints($user, $summary['subtotal'] - $summary['promocode_discount']),
         ]);
     }
 
@@ -44,10 +51,16 @@ class CheckoutController extends Controller
     {
         $validated = $request->validate([
             'promocode' => ['nullable', 'string', 'max:50'],
+            'spend_loyalty' => ['nullable', 'boolean'],
         ]);
 
         $items = $this->buildCartItems();
-        $summary = CartPricing::summarize($items, (string) ($validated['promocode'] ?? ''));
+        $summary = CartPricing::summarize(
+            $items,
+            (string) ($validated['promocode'] ?? ''),
+            $request->boolean('spend_loyalty'),
+            Auth::user()
+        );
 
         return response()->json([
             'empty_cart' => $items->isEmpty(),
@@ -55,7 +68,9 @@ class CheckoutController extends Controller
             'product_discount' => $summary['product_discount'],
             'subtotal' => $summary['subtotal'],
             'promocode_discount' => $summary['promocode_discount'],
-            'discount' => round($summary['product_discount'] + $summary['promocode_discount'], 2),
+            'loyalty_discount' => $summary['loyalty_discount'],
+            'loyalty_points_used' => $summary['loyalty_points_used'],
+            'discount' => round($summary['product_discount'] + $summary['promocode_discount'] + $summary['loyalty_discount'], 2),
             'total' => $summary['total'],
             'promocode' => [
                 'valid' => $summary['promocode_valid'],
@@ -82,6 +97,12 @@ class CheckoutController extends Controller
             'address' => ['required', 'array'],
             'address.full' => ['required', 'string'],
             'promocode' => ['nullable', 'string'],
+            'spend_loyalty' => ['nullable', 'boolean'],
+            'accept_offer' => ['accepted'],
+            'accept_privacy' => ['accepted'],
+        ], [
+            'accept_offer.accepted' => 'Необходимо принять условия публичной оферты.',
+            'accept_privacy.accepted' => 'Необходимо согласие с политикой конфиденциальности.',
         ]);
 
         $items = $this->buildCartItems();
@@ -98,23 +119,33 @@ class CheckoutController extends Controller
             }
         }
 
-        $summary = CartPricing::summarize($items, (string) ($validated['promocode'] ?? ''));
-        $promocode = null;
+        $user = Auth::user();
+        $summary = CartPricing::summarize(
+            $items,
+            (string) ($validated['promocode'] ?? ''),
+            $request->boolean('spend_loyalty'),
+            $user
+        );
 
+        $promocode = null;
         $rawPromo = trim((string) ($validated['promocode'] ?? ''));
         if ($rawPromo !== '') {
             $promocode = PromocodePricing::findActiveByCode($rawPromo);
-            if (! $promocode || ! PromocodePricing::redeemable($promocode)) {
+            if (! $promocode || ! PromocodePricing::redeemable($promocode, $user)) {
                 return back()->withErrors([
                     'promocode' => 'Промокод не найден, истёк или недоступен.',
                 ]);
             }
             if (! $summary['promocode_valid']) {
                 return back()->withErrors([
-                    'promocode' => 'Промокод не найден, истёк или недоступен.',
+                    'promocode' => $summary['promocode_message'] ?? 'Промокод недоступен.',
                 ]);
             }
             $promocode->increment('usage_count');
+        }
+
+        if ($summary['loyalty_points_used'] > 0) {
+            $this->loyaltyService->redeemPoints($user, $summary['loyalty_points_used']);
         }
 
         $order = Order::query()->create([
@@ -134,6 +165,12 @@ class CheckoutController extends Controller
                 'price' => $item['unit_price'],
             ]);
         }
+
+        $this->telegramService->notifyAdminNewOrder(
+            $order->id,
+            (float) $order->total_price,
+            (string) $user->name
+        );
 
         $payment = $this->yooKassaService->createPayment($order);
 
@@ -190,6 +227,15 @@ class CheckoutController extends Controller
                 'status' => 'paid',
                 'paid_at' => now(),
             ]);
+
+            $fresh = $locked->fresh(['user']);
+            $this->loyaltyService->awardForPaidOrder($fresh);
+
+            if ($fresh->user?->telegram_chat_id) {
+                $this->telegramService->orderPaid($fresh->user->telegram_chat_id, $fresh->id);
+            }
+
+            $this->telegramService->notifyAdminOrderPaid($fresh->id, (float) $fresh->total_price);
         });
     }
 }

@@ -40,9 +40,8 @@ class CartController extends Controller
         ]);
 
         $size = strtoupper(trim($validated['size']));
-        $allowed = array_map('strtoupper', $product->sizesList());
-        if (! in_array($size, $allowed, true)) {
-            return back()->withErrors(['size' => 'Выберите доступный размер.']);
+        if (! $product->isSizeAvailable($size)) {
+            return back()->withErrors(['size' => 'Этот размер недоступен. Выберите другой.']);
         }
 
         $qty = (int) ($validated['quantity'] ?? 1);

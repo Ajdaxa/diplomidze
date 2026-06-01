@@ -87,18 +87,21 @@ class ProductController extends Controller
             'category_id' => ['required', 'exists:categories,id'],
             'image' => ['nullable', 'url'],
             'secondary_image' => ['nullable', 'url'],
+            'gallery_images' => ['nullable', 'string', 'max:5000'],
             'image_file' => ['nullable', 'image', 'max:5120'],
             'secondary_image_file' => ['nullable', 'image', 'max:5120'],
             'color' => ['nullable', 'string', 'max:50'],
             'gender' => ['nullable', 'in:male,female,unisex'],
             'size' => ['nullable', 'string', 'max:20'],
             'available_sizes' => ['nullable', 'string', 'max:500'],
+            'size_stock' => ['nullable', 'string', 'max:1000'],
             'is_new_collection' => ['nullable', 'boolean'],
             'is_limited_edition' => ['nullable', 'boolean'],
             'is_active' => ['nullable', 'boolean'],
         ]);
 
         $sizes = $this->parseList($validated['available_sizes'] ?? '');
+        $sizeStock = $this->parseSizeStock($validated['size_stock'] ?? '');
         $imageUrl = $validated['image'] ?? $product->image;
         $secondaryImageUrl = $validated['secondary_image'] ?? $product->secondary_image;
 
@@ -126,10 +129,12 @@ class ProductController extends Controller
             'category' => $category->slug,
             'image' => $imageUrl,
             'secondary_image' => $secondaryImageUrl,
+            'gallery_images' => $this->parseGalleryUrls($validated['gallery_images'] ?? ''),
             'color' => $validated['color'] ?? null,
             'gender' => $validated['gender'] ?? 'unisex',
             'size' => $validated['size'] ?? null,
             'available_sizes' => $sizes === [] ? null : $sizes,
+            'size_stock' => $sizeStock,
             'is_new_collection' => $request->boolean('is_new_collection'),
             'is_limited_edition' => $request->boolean('is_limited_edition'),
             'is_active' => $request->boolean('is_active'),
@@ -153,5 +158,44 @@ class ProductController extends Controller
         }
 
         return array_values(array_filter(array_map('trim', preg_split('/[,\s]+/', $raw) ?: [])));
+    }
+
+    /** @return array<string, int>|null */
+    private function parseSizeStock(?string $raw): ?array
+    {
+        if ($raw === null || trim($raw) === '') {
+            return null;
+        }
+
+        $map = [];
+        foreach (preg_split('/[,;]+/', $raw) ?: [] as $chunk) {
+            $chunk = trim($chunk);
+            if ($chunk === '') {
+                continue;
+            }
+            if (str_contains($chunk, ':')) {
+                [$size, $qty] = array_map('trim', explode(':', $chunk, 2));
+                if ($size !== '') {
+                    $map[strtoupper($size)] = max(0, (int) $qty);
+                }
+            } else {
+                $map[strtoupper($chunk)] = 1;
+            }
+        }
+
+        return $map === [] ? null : $map;
+    }
+
+    /** @return list<string>|null */
+    private function parseGalleryUrls(?string $raw): ?array
+    {
+        if ($raw === null || trim($raw) === '') {
+            return null;
+        }
+
+        $lines = preg_split('/\r\n|\r|\n/', $raw) ?: [];
+        $urls = array_values(array_filter(array_map('trim', $lines)));
+
+        return $urls === [] ? null : $urls;
     }
 }

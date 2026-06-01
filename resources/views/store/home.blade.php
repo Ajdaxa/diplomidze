@@ -66,7 +66,7 @@
         <div class="mt-8 grid gap-6 sm:grid-cols-3">
             <div class="rounded-xl border border-neutral-200 bg-white p-5 shadow-sm">
                 <p class="text-[10px] font-semibold uppercase tracking-wider text-neutral-500">Почта</p>
-                <a href="mailto:{{ config('mail.from.address', 'support@dyab.ru') }}" class="mt-2 inline-block text-sm font-medium text-neutral-900 underline decoration-neutral-300 underline-offset-2 hover:decoration-black">{{ config('mail.from.address', 'support@dyab.ru') }}</a>
+                <a href="mailto:{{ config('site.support_email') }}" class="mt-2 inline-block text-sm font-medium text-neutral-900 underline decoration-neutral-300 underline-offset-2 hover:decoration-black">{{ config('site.support_email') }}</a>
             </div>
             <div class="rounded-xl border border-neutral-200 bg-white p-5 shadow-sm">
                 <p class="text-[10px] font-semibold uppercase tracking-wider text-neutral-500">Время работы</p>

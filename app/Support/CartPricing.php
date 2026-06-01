@@ -3,6 +3,8 @@
 namespace App\Support;
 
 use App\Models\Product;
+use App\Models\User;
+use App\Services\LoyaltyService;
 use Illuminate\Support\Collection;
 
 final class CartPricing
@@ -87,13 +89,15 @@ final class CartPricing
      *     product_discount: float,
      *     subtotal: float,
      *     promocode_discount: float,
+     *     loyalty_discount: float,
+     *     loyalty_points_used: int,
      *     total: float,
      *     promocode_valid: bool,
      *     promocode_code: string|null,
      *     promocode_message: string|null
      * }
      */
-    public static function summarize(Collection $items, ?string $promocodeInput = null): array
+    public static function summarize(Collection $items, ?string $promocodeInput = null, bool $spendLoyalty = false, ?User $user = null): array
     {
         $catalogSubtotal = (float) $items->sum('line_original_total');
         $subtotal = (float) $items->sum('line_total');
@@ -101,6 +105,13 @@ final class CartPricing
 
         $promoPreview = PromocodePricing::preview($subtotal, $promocodeInput);
         $promocodeDiscount = (float) $promoPreview['discount'];
+        $afterPromo = max(0.0, $subtotal - $promocodeDiscount);
+
+        $loyaltyService = app(LoyaltyService::class);
+        $pointsUsed = ($spendLoyalty && $user)
+            ? $loyaltyService->maxSpendablePoints($user, $afterPromo)
+            : 0;
+        $loyaltyDiscount = $loyaltyService->pointsDiscount($pointsUsed, $afterPromo);
 
         return [
             'items' => $items,
@@ -108,7 +119,9 @@ final class CartPricing
             'product_discount' => round($productDiscount, 2),
             'subtotal' => round($subtotal, 2),
             'promocode_discount' => round($promocodeDiscount, 2),
-            'total' => round(max(0.0, $subtotal - $promocodeDiscount), 2),
+            'loyalty_discount' => round($loyaltyDiscount, 2),
+            'loyalty_points_used' => $pointsUsed,
+            'total' => round(max(0.0, $afterPromo - $loyaltyDiscount), 2),
             'promocode_valid' => (bool) $promoPreview['promocode_valid'],
             'promocode_code' => $promoPreview['promocode_code'],
             'promocode_message' => $promoPreview['message'],

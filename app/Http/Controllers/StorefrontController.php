@@ -5,7 +5,9 @@ namespace App\Http\Controllers;
 use App\Models\Category;
 use App\Models\Product;
 use App\Models\User;
+use App\Support\CatalogQuery;
 use Illuminate\Contracts\View\View;
+use Illuminate\Http\Request;
 
 class StorefrontController extends Controller
 {
@@ -30,13 +32,10 @@ class StorefrontController extends Controller
         return view('store.home', compact('hitProducts', 'favoriteIds'));
     }
 
-    public function catalog(): View
+    public function catalog(Request $request): View
     {
-        $products = Product::query()
-            ->where('is_active', true)
-            ->with('categoryModel')
-            ->latest()
-            ->get();
+        $filters = CatalogQuery::filtersFromRequest($request);
+        $products = CatalogQuery::apply(CatalogQuery::base(), $filters)->get();
 
         $categories = Category::query()
             ->where('is_active', true)
@@ -58,6 +57,11 @@ class StorefrontController extends Controller
             $favoriteIds = $user->favoriteProducts()->pluck('products.id')->all();
         }
 
-        return view('store.catalog', compact('products', 'categories', 'favoriteIds'));
+        $priceBounds = Product::query()
+            ->where('is_active', true)
+            ->selectRaw('MIN(price) as min_price, MAX(price) as max_price')
+            ->first();
+
+        return view('store.catalog', compact('products', 'categories', 'favoriteIds', 'filters', 'priceBounds'));
     }
 }

@@ -35,6 +35,7 @@
             <a href="{{ route('admin.orders.index') }}" class="min-h-10 rounded-lg px-3 py-2 hover:bg-neutral-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neutral-900">Заказы</a>
             <a href="{{ route('admin.couriers.index') }}" class="min-h-10 rounded-lg px-3 py-2 hover:bg-neutral-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neutral-900">Курьеры</a>
             <a href="{{ route('admin.promocodes.index') }}" class="min-h-10 rounded-lg px-3 py-2 hover:bg-neutral-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neutral-900">Промокоды</a>
+            <a href="{{ route('admin.reviews.index') }}" class="min-h-10 rounded-lg px-3 py-2 hover:bg-neutral-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neutral-900">Отзывы</a>
         </nav>
         <div class="mt-auto border-t border-neutral-200 pt-4">
             <a href="{{ route('home') }}" class="text-xs text-neutral-500 hover:text-black">На витрину</a>
