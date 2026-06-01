@@ -71,38 +71,20 @@
         <x-empty-state class="mt-8" title="Ничего не найдено" description="Сбросьте фильтры или измените параметры поиска.">
             <a href="{{ route('catalog') }}" class="inline-flex min-h-11 items-center justify-center border border-neutral-300 px-6 text-xs font-semibold uppercase tracking-[0.2em]">Сбросить</a>
         </x-empty-state>
+    @else
+        <p class="mt-6 text-xs text-neutral-500">
+            Показано {{ $products->firstItem() }}–{{ $products->lastItem() }} из {{ $products->total() }}
+        </p>
     @endif
 
-    <div id="skeleton-grid" class="mt-6 grid grid-cols-2 gap-x-[clamp(0.75rem,2vw,1.25rem)] gap-y-8 min-[520px]:grid-cols-[repeat(auto-fill,minmax(11rem,1fr))] xl:grid-cols-4 xl:gap-y-10">
-        @for ($i = 0; $i < 8; $i++)
-            <div class="animate-pulse">
-                <div class="aspect-[3/4] bg-neutral-200"></div>
-                <div class="mt-4 h-3 w-3/4 bg-neutral-200"></div>
-                <div class="mt-2 h-3 w-1/3 bg-neutral-200"></div>
-            </div>
-        @endfor
-    </div>
-
-    <div id="products-grid" class="mt-6 {{ $products->isEmpty() ? 'hidden' : 'hidden' }} grid-cols-2 gap-x-[clamp(0.75rem,2vw,1.25rem)] gap-y-10 min-[520px]:grid-cols-[repeat(auto-fill,minmax(11rem,1fr))] xl:grid-cols-4 xl:gap-y-12">
+    <div id="products-grid" class="mt-6 {{ $products->isEmpty() ? 'hidden' : 'grid' }} grid-cols-2 gap-x-[clamp(0.75rem,2vw,1.25rem)] gap-y-10 min-[520px]:grid-cols-[repeat(auto-fill,minmax(11rem,1fr))] xl:grid-cols-4 xl:gap-y-12">
         @foreach($products as $product)
-            <article class="product-card group"
-                     data-product='@json($product)'
-                     data-id="{{ $product->id }}"
-                     data-category="{{ $product->category_slug }}"
-                     data-color="{{ $product->color }}"
-                     data-gender="{{ $product->gender ?? 'unisex' }}"
-                     data-stock="{{ $product->stock }}"
-                     data-new="{{ $product->is_new_collection ? '1' : '0' }}"
-                     data-limited="{{ $product->is_limited_edition ? '1' : '0' }}"
-                     data-price="{{ $product->saleUnitPrice() }}"
-                     data-sale="{{ $product->hasSale() ? '1' : '0' }}"
-                     data-name="{{ $product->name }}"
-                     data-sizes="{{ implode(',', $product->inStockSizes()) }}"
-                     data-created="{{ $product->created_at?->timestamp ?? 0 }}">
+            @php $eagerImage = $loop->index < 4; @endphp
+            <article class="product-card group" data-id="{{ $product->id }}">
                 <div class="relative aspect-[3/4] overflow-hidden bg-neutral-100">
                     <a href="{{ route('products.show', $product->slug) }}" class="absolute inset-0 z-0" aria-label="{{ $product->name }}"></a>
-                    <img src="{{ $product->image ?: 'https://picsum.photos/800/1067?random='.$product->id }}" alt="" class="absolute inset-0 h-full w-full object-cover transition duration-500 ease-out group-hover:opacity-0">
-                    <img src="{{ $product->secondary_image ?: ($product->image ?: 'https://picsum.photos/800/1067?random=' . ($product->id + 31)) }}" alt="" class="absolute inset-0 h-full w-full object-cover opacity-0 transition duration-500 ease-out group-hover:opacity-100">
+                    <img src="{{ $product->image ?: 'https://picsum.photos/800/1067?random='.$product->id }}" alt="" width="400" height="533" @if($eagerImage) loading="eager" fetchpriority="high" @else loading="lazy" decoding="async" @endif class="absolute inset-0 h-full w-full object-cover transition duration-500 ease-out group-hover:opacity-0">
+                    <img src="{{ $product->secondary_image ?: ($product->image ?: 'https://picsum.photos/800/1067?random=' . ($product->id + 31)) }}" alt="" width="400" height="533" loading="lazy" decoding="async" class="absolute inset-0 h-full w-full object-cover opacity-0 transition duration-500 ease-out group-hover:opacity-100">
                     @auth
                         <button type="button" class="favorite-btn absolute bottom-3 right-3 z-10 flex h-10 w-10 min-h-10 min-w-10 items-center justify-center rounded-full border border-neutral-200 bg-white/90 text-neutral-800 shadow-sm backdrop-blur-sm hover:bg-white {{ isset($favoriteLookup[$product->id]) ? 'text-red-600' : '' }}" data-id="{{ $product->id }}" data-active="{{ isset($favoriteLookup[$product->id]) ? '1' : '0' }}" aria-label="Избранное">
                             <svg class="heart-icon h-5 w-5" fill="{{ isset($favoriteLookup[$product->id]) ? 'currentColor' : 'none' }}" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z"/></svg>
@@ -129,18 +111,11 @@
         @endforeach
     </div>
 
+    {{ $products->links() }}
+
     @push('scripts')
     <script>
         const searchInput = document.getElementById('product-search');
-
-        setTimeout(() => {
-            document.getElementById('skeleton-grid')?.classList.add('hidden');
-            const grid = document.getElementById('products-grid');
-            if (grid && grid.querySelector('.product-card')) {
-                grid.classList.remove('hidden');
-                grid.classList.add('grid');
-            }
-        }, 450);
 
         document.querySelectorAll('.favorite-btn').forEach((btn) => {
             btn.addEventListener('click', async (e) => {
