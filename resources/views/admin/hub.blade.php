@@ -37,7 +37,12 @@
         </a>
         <a href="{{ route('admin.orders.index') }}" class="group rounded-xl border border-neutral-200 bg-white p-6 shadow-sm transition hover:border-black">
             <h2 class="text-sm font-semibold uppercase tracking-wider">Заказы</h2>
-            <p class="mt-2 text-xs text-neutral-500">Статусы и курьеры</p>
+            <p class="mt-2 text-xs text-neutral-500">
+                Статусы и курьеры
+                @if($paidOrders > 0)
+                    <span class="ml-1 inline-flex rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold text-amber-900">{{ $paidOrders }} новых</span>
+                @endif
+            </p>
         </a>
         <a href="{{ route('admin.couriers.index') }}" class="group rounded-xl border border-neutral-200 bg-white p-6 shadow-sm transition hover:border-black">
             <h2 class="text-sm font-semibold uppercase tracking-wider">Курьеры</h2>

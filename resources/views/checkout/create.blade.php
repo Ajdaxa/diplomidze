@@ -108,16 +108,29 @@
             clearTimeout(timer);
             timer = setTimeout(async () => {
                 const query = addressInput.value.trim();
+                if (hiddenAddress) {
+                    hiddenAddress.value = query;
+                }
                 if (query.length < 3) {
                     suggestionsEl.innerHTML = '';
                     return;
                 }
                 const url = new URL('{{ route('checkout.address.suggestions') }}');
                 url.searchParams.set('query', query);
-                const res = await fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' } });
-                const items = await res.json();
-                suggestionsEl.innerHTML = items.map((item) =>
-                    `<button type="button" class="block w-full border-b border-neutral-100 px-3 py-2.5 text-left text-sm hover:bg-neutral-50" data-value="${item.value.replace(/"/g, '&quot;')}">${item.value}</button>`
+                let items = [];
+                try {
+                    const res = await fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' } });
+                    if (!res.ok) {
+                        suggestionsEl.innerHTML = '';
+                        return;
+                    }
+                    items = await res.json();
+                } catch (e) {
+                    suggestionsEl.innerHTML = '';
+                    return;
+                }
+                suggestionsEl.innerHTML = (items || []).map((item) =>
+                    `<button type="button" class="block w-full border-b border-neutral-100 px-3 py-2.5 text-left text-sm hover:bg-neutral-50" data-value="${String(item.value ?? '').replace(/"/g, '&quot;')}">${String(item.value ?? '')}</button>`
                 ).join('');
                 suggestionsEl.querySelectorAll('button').forEach((btn) => {
                     btn.addEventListener('click', () => {
