@@ -27,13 +27,6 @@ class ReviewController extends Controller
         return back()->with('status', 'Отзыв опубликован.');
     }
 
-    public function reject(Review $review)
-    {
-        $review->update(['status' => Review::STATUS_REJECTED]);
-
-        return back()->with('status', 'Отзыв отклонён.');
-    }
-
     public function destroy(Review $review)
     {
         $review->delete();

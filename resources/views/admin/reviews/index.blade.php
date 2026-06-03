@@ -30,14 +30,9 @@
                     <p class="mt-3 text-sm leading-relaxed text-neutral-700">{{ $review->body }}</p>
                 @endif
                 <div class="mt-4 flex flex-wrap gap-2">
-                    @if($review->status !== 'approved')
+                    @if($review->status === 'pending')
                         <form method="POST" action="{{ route('admin.reviews.approve', $review) }}">@csrf @method('PATCH')
                             <button type="submit" class="rounded-lg bg-black px-3 py-1.5 text-xs font-semibold uppercase text-white">Опубликовать</button>
-                        </form>
-                    @endif
-                    @if($review->status !== 'rejected')
-                        <form method="POST" action="{{ route('admin.reviews.reject', $review) }}">@csrf @method('PATCH')
-                            <button type="submit" class="rounded-lg border border-neutral-300 px-3 py-1.5 text-xs font-semibold uppercase">Отклонить</button>
                         </form>
                     @endif
                     <form method="POST" action="{{ route('admin.reviews.destroy', $review) }}" onsubmit="return confirm('Удалить отзыв?');">@csrf @method('DELETE')

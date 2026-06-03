@@ -85,4 +85,26 @@ class User extends Authenticatable
     {
         return $this->hasMany(self::class, 'referred_by_user_id');
     }
+
+    /** Покупатели витрины (без персонала магазина). */
+    public function scopeClients($query)
+    {
+        return $query->where('role', 'client');
+    }
+
+    public function isStoreClient(): bool
+    {
+        return $this->role === 'client';
+    }
+
+    public function roleLabel(): string
+    {
+        return match ($this->role) {
+            'admin' => 'Администратор',
+            'manager' => 'Менеджер',
+            'courier' => 'Курьер',
+            default => 'Клиент',
+        };
+    }
 }
+

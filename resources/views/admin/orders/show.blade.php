@@ -24,7 +24,13 @@
             <div class="rounded-xl border border-stone-200 bg-white p-5">
                 <h2 class="text-xs font-semibold uppercase tracking-wider text-stone-500">Клиент</h2>
                 @if($order->user)
-                    <p class="mt-3 font-medium">{{ $order->user->name }}</p>
+                    <p class="mt-3 font-medium">
+                        @if($order->user->isStoreClient())
+                            <a href="{{ route('admin.users.show', $order->user) }}" class="underline decoration-stone-300 underline-offset-2 hover:decoration-black">{{ $order->user->name }}</a>
+                        @else
+                            {{ $order->user->name }}
+                        @endif
+                    </p>
                     <p class="text-sm text-stone-600">{{ $order->user->email ?: '—' }}</p>
                     <p class="text-sm text-stone-600">{{ $order->user->phone ?: '—' }}</p>
                 @else

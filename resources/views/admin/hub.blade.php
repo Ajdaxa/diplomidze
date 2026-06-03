@@ -35,6 +35,10 @@
             <h2 class="text-sm font-semibold uppercase tracking-wider">Новый товар</h2>
             <p class="mt-2 text-xs text-neutral-500">Отдельная форма добавления</p>
         </a>
+        <a href="{{ route('admin.users.index') }}" class="group rounded-xl border border-neutral-200 bg-white p-6 shadow-sm transition hover:border-black">
+            <h2 class="text-sm font-semibold uppercase tracking-wider">Клиенты</h2>
+            <p class="mt-2 text-xs text-neutral-500">Контакты, баллы, история заказов</p>
+        </a>
         <a href="{{ route('admin.orders.index') }}" class="group rounded-xl border border-neutral-200 bg-white p-6 shadow-sm transition hover:border-black">
             <h2 class="text-sm font-semibold uppercase tracking-wider">Заказы</h2>
             <p class="mt-2 text-xs text-neutral-500">
