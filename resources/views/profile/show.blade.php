@@ -18,7 +18,6 @@
                 <div><dt class="text-neutral-500">Имя</dt><dd class="font-medium">{{ $user->name }}</dd></div>
                 <div><dt class="text-neutral-500">Email</dt><dd class="font-medium">{{ $user->email ?: '—' }}</dd></div>
                 <div><dt class="text-neutral-500">Телефон</dt><dd class="font-medium">{{ $user->phone ?: '—' }}</dd></div>
-                <div><dt class="text-neutral-500">Telegram</dt><dd class="font-medium">{{ $user->telegram_chat_id ? 'Привязан' : 'Не привязан' }}</dd></div>
             </dl>
             <form method="POST" action="{{ route('logout') }}" class="mt-5">
                 @csrf

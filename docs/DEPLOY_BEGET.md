@@ -37,7 +37,7 @@ php ~/composer.phar install --no-dev --optimize-autoloader
 Локально перед выкладкой:
 
 - В `.env` на сервере: `APP_ENV=production`, `APP_DEBUG=false`, `APP_URL=https://ваш-домен.ru`
-- Секреты: `APP_KEY`, БД, `YOOKASSA_*`, `TELEGRAM_*`, `DADATA_*` — только на сервере, не в git.
+- Секреты: `APP_KEY`, БД, `YOOKASSA_*`, `DADATA_*` — только на сервере, не в git.
 
 На сервере после загрузки файлов:
 
@@ -90,12 +90,11 @@ Laravel должен открываться **только** через `public/
 
 ---
 
-## 6. Webhook ЮKassa и Telegram
+## 6. Webhook ЮKassa
 
 - URL webhook ЮKassa в личном кабинете:  
   `https://ваш-домен.ru/webhooks/yookassa`  
   (метод POST, без CSRF — маршрут уже в исключениях.)
-- Telegram webhook: URL из вашего `routes/web.php` (`/webhook/telegram`) — должен быть доступен по HTTPS снаружи.
 
 ---
 

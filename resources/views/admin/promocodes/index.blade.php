@@ -36,10 +36,6 @@
                         <label class="text-xs"><input type="checkbox" name="is_active" value="1" @checked($promocode->is_active)> active</label>
                         <button class="rounded border border-stone-300 px-3 py-2 text-sm">Сохранить</button>
                     </form>
-                    <form method="POST" action="{{ route('admin.promocodes.broadcast', $promocode) }}">
-                        @csrf
-                        <button class="rounded border border-stone-300 px-3 py-2 text-sm">Разослать промокод всем</button>
-                    </form>
                     <form method="POST" action="{{ route('admin.promocodes.destroy', $promocode) }}">
                         @csrf @method('DELETE')
                         <button class="rounded border border-rose-300 px-3 py-2 text-sm text-rose-700">Удалить</button>

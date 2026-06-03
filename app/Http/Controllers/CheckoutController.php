@@ -7,7 +7,6 @@ use App\Models\OrderItem;
 use App\Models\Product;
 use App\Services\DaDataService;
 use App\Services\LoyaltyService;
-use App\Services\TelegramService;
 use App\Services\YooKassaService;
 use App\Support\CartPricing;
 use App\Support\PromocodePricing;
@@ -21,7 +20,6 @@ class CheckoutController extends Controller
         private readonly DaDataService $daDataService,
         private readonly YooKassaService $yooKassaService,
         private readonly LoyaltyService $loyaltyService,
-        private readonly TelegramService $telegramService,
     ) {
     }
 
@@ -166,12 +164,6 @@ class CheckoutController extends Controller
             ]);
         }
 
-        $this->telegramService->notifyAdminNewOrder(
-            $order->id,
-            (float) $order->total_price,
-            (string) $user->name
-        );
-
         $payment = $this->yooKassaService->createPayment($order);
 
         if (! $payment) {
@@ -230,12 +222,6 @@ class CheckoutController extends Controller
 
             $fresh = $locked->fresh(['user']);
             $this->loyaltyService->awardForPaidOrder($fresh);
-
-            if ($fresh->user?->telegram_chat_id) {
-                $this->telegramService->orderPaid($fresh->user->telegram_chat_id, $fresh->id);
-            }
-
-            $this->telegramService->notifyAdminOrderPaid($fresh->id, (float) $fresh->total_price);
         });
     }
 }

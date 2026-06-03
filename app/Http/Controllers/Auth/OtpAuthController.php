@@ -4,23 +4,13 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
-use App\Services\LoyaltyService;
-use App\Services\TelegramService;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
 class OtpAuthController extends Controller
 {
-    public function __construct(
-        private readonly TelegramService $telegramService,
-        private readonly LoyaltyService $loyaltyService,
-    ) {
-    }
-
     public function showForm(Request $request)
     {
         if ($request->filled('redirect')) {
@@ -46,101 +36,6 @@ class OtpAuthController extends Controller
         }
 
         return view('auth.register');
-    }
-
-    public function showTelegramForm(Request $request)
-    {
-        if ($request->filled('redirect')) {
-            session(['url.intended' => (string) $request->query('redirect')]);
-        }
-
-        return view('auth.telegram-login');
-    }
-
-    public function sendCode(Request $request)
-    {
-        $validated = $request->validate([
-            'identity' => ['required', 'string'],
-        ]);
-
-        $identity = trim($validated['identity']);
-
-        $user = User::query()
-            ->where('email', $identity)
-            ->orWhere('phone', $identity)
-            ->first();
-
-        if (! $user) {
-            throw ValidationException::withMessages([
-                'identity' => 'Пользователь не найден.',
-            ]);
-        }
-
-        if (! $user->telegram_chat_id) {
-            $token = Str::random(32);
-            $user->update([
-                'telegram_link_token' => $token,
-                'telegram_link_token_expires_at' => now()->addMinutes(30),
-            ]);
-
-            $botUsername = config('services.telegram.bot_username');
-            $link = $botUsername
-                ? "https://t.me/{$botUsername}?start={$token}"
-                : "Откройте бота и отправьте /start {$token}";
-
-            return back()->withErrors([
-                'identity' => "Сначала привяжите Telegram: {$link}",
-            ]);
-        }
-
-        $code = str_pad((string) random_int(0, 9999), 4, '0', STR_PAD_LEFT);
-        $cacheKey = 'otp_code_'.($user->phone ?: $user->id);
-
-        Cache::put($cacheKey, [
-            'code' => $code,
-            'user_id' => $user->id,
-        ], now()->addMinutes(5));
-
-        $this->telegramService->sendOtp($user->telegram_chat_id, $code);
-
-        session([
-            'otp_cache_key' => $cacheKey,
-        ]);
-
-        return back()
-            ->with('status', 'Код отправлен в Telegram.')
-            ->with('status_type', 'info');
-    }
-
-    public function verifyCode(Request $request)
-    {
-        $validated = $request->validate([
-            'code' => ['required', 'digits:4'],
-        ]);
-
-        $payload = Cache::get(session('otp_cache_key'));
-
-        if (! $payload) {
-            throw ValidationException::withMessages([
-                'code' => 'Код устарел. Запросите новый.',
-            ]);
-        }
-
-        if (($payload['code'] ?? null) !== $validated['code']) {
-            throw ValidationException::withMessages([
-                'code' => 'Неверный код.',
-            ]);
-        }
-
-        Auth::loginUsingId($payload['user_id'], remember: true);
-        $user = Auth::user();
-        Cache::forget(session('otp_cache_key'));
-
-        session()->forget(['otp_cache_key']);
-
-        return $this->redirectByRole($user)
-            ->with('status', 'Успешно авторизировались.')
-            ->with('status_type', 'success');
     }
 
     public function loginWithPassword(Request $request)
@@ -190,65 +85,6 @@ class OtpAuthController extends Controller
 
         return redirect()->intended(route('home'))
             ->with('status', 'Регистрация прошла успешно. Добро пожаловать!')
-            ->with('status_type', 'success');
-    }
-
-    public function telegramAutoRegister()
-    {
-        $token = Str::random(32);
-        $suffix = Str::lower(Str::random(8));
-
-        $user = User::query()->create([
-            'name' => 'Telegram User '.$suffix,
-            'email' => "tg_{$suffix}@dyab.local",
-            'password' => Str::random(24),
-            'role' => 'client',
-            'telegram_link_token' => $token,
-            'telegram_link_token_expires_at' => now()->addMinutes(30),
-        ]);
-        $user->syncRoles(['client']);
-
-        $botUsername = config('services.telegram.bot_username');
-        $link = $botUsername
-            ? "https://t.me/{$botUsername}?start={$token}"
-            : "Откройте бота и отправьте /start {$token}";
-
-        session([
-            'telegram_pending_email' => $user->email,
-            'telegram_pending_user_id' => $user->id,
-        ]);
-
-        return redirect()->route('otp.telegram.form')
-            ->with('status', "Шаг 1/2: откройте бота и нажмите Start — {$link}")
-            ->with('status_type', 'info');
-    }
-
-    public function completeTelegramLogin(string $token)
-    {
-        $userId = Cache::get('tg_login:'.$token);
-
-        if (! $userId) {
-            return redirect()->route('otp.telegram.form')
-                ->withErrors(['identity' => 'Ссылка входа устарела. Привяжите Telegram заново или войдите по email и коду.'])
-                ->with('status_type', 'error');
-        }
-
-        $user = User::query()->find($userId);
-
-        if (! $user || ! $user->telegram_chat_id) {
-            Cache::forget('tg_login:'.$token);
-
-            return redirect()->route('otp.telegram.form')
-                ->withErrors(['identity' => 'Аккаунт не найден или Telegram ещё не привязан. Сначала откройте бота по ссылке.']);
-        }
-
-        Cache::forget('tg_login:'.$token);
-        session()->forget(['telegram_pending_email', 'telegram_pending_user_id']);
-
-        Auth::login($user, remember: true);
-
-        return $this->redirectByRole($user)
-            ->with('status', 'Вход через Telegram выполнен.')
             ->with('status_type', 'success');
     }
 

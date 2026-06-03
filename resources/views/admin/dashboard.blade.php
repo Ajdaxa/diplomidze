@@ -26,7 +26,7 @@
             <p class="mt-2 text-2xl font-semibold text-amber-900">{{ $pendingOrders }}</p>
         </div>
         <div class="rounded-xl border border-neutral-200 bg-white p-4">
-            <p class="text-[10px] font-semibold uppercase tracking-wider text-neutral-500">Курьеры (TG)</p>
+            <p class="text-[10px] font-semibold uppercase tracking-wider text-neutral-500">Курьеры</p>
             <p class="mt-2 text-2xl font-semibold">{{ $activeCouriersCount }}</p>
         </div>
     </div>

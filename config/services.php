@@ -31,12 +31,6 @@ return [
         'region' => env('AWS_DEFAULT_REGION', 'us-east-1'),
     ],
 
-    'telegram' => [
-        'bot_token' => env('TELEGRAM_BOT_TOKEN'),
-        'bot_username' => env('TELEGRAM_BOT_USERNAME'),
-        'admin_chat_id' => env('TELEGRAM_ADMIN_CHAT_ID'),
-    ],
-
     'dadata' => [
         'api_key' => env('DADATA_API_KEY'),
         'secret_key' => env('DADATA_SECRET_KEY'),

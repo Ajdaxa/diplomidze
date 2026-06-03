@@ -27,7 +27,6 @@
                     <p class="mt-3 font-medium">{{ $order->user->name }}</p>
                     <p class="text-sm text-stone-600">{{ $order->user->email ?: '—' }}</p>
                     <p class="text-sm text-stone-600">{{ $order->user->phone ?: '—' }}</p>
-                    <p class="mt-1 text-xs text-stone-500">Telegram: {{ $order->user->telegram_chat_id ? 'привязан' : 'нет' }}</p>
                 @else
                     <p class="mt-3 text-sm text-stone-500">Пользователь удалён</p>
                 @endif

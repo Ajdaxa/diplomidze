@@ -31,7 +31,7 @@ class DashboardController extends Controller
             ->limit(10)
             ->get();
 
-        $activeCouriersCount = User::role('courier')->whereNotNull('telegram_chat_id')->count();
+        $activeCouriersCount = User::role('courier')->count();
 
         $todayOrders = Order::query()->where('created_at', '>=', $today)->count();
         $todayRevenue = (float) Order::query()

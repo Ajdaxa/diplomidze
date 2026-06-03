@@ -24,9 +24,6 @@ class User extends Authenticatable
         'name',
         'email',
         'phone',
-        'telegram_chat_id',
-        'telegram_link_token',
-        'telegram_link_token_expires_at',
         'role',
         'loyalty_points',
         'referral_code',
@@ -51,7 +48,6 @@ class User extends Authenticatable
      */
     protected $casts = [
         'email_verified_at' => 'datetime',
-        'telegram_link_token_expires_at' => 'datetime',
         'password' => 'hashed',
     ];
 

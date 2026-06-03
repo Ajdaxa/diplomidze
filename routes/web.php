@@ -20,7 +20,6 @@ use App\Http\Controllers\ReviewController;
 use App\Http\Controllers\ProductController as StoreProductController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\StorefrontController;
-use App\Http\Controllers\TelegramController;
 use App\Http\Controllers\Webhook\YooKassaWebhookController;
 use Illuminate\Support\Facades\Route;
 
@@ -42,13 +41,8 @@ Route::prefix('auth/otp')->name('otp.')->group(function () {
     Route::get('/', [OtpAuthController::class, 'showForm'])->name('form');
     Route::get('/password', [OtpAuthController::class, 'showPasswordForm'])->name('password.form');
     Route::get('/register', [OtpAuthController::class, 'showRegisterForm'])->name('register.form');
-    Route::get('/telegram', [OtpAuthController::class, 'showTelegramForm'])->name('telegram.form');
-    Route::get('/telegram/complete/{token}', [OtpAuthController::class, 'completeTelegramLogin'])->name('telegram.complete');
-    Route::post('/send', [OtpAuthController::class, 'sendCode'])->name('send');
-    Route::post('/verify', [OtpAuthController::class, 'verifyCode'])->name('verify');
     Route::post('/password', [OtpAuthController::class, 'loginWithPassword'])->name('password');
     Route::post('/register', [OtpAuthController::class, 'register'])->name('register');
-    Route::post('/telegram-autoreg', [OtpAuthController::class, 'telegramAutoRegister'])->name('telegram_autoreg');
 });
 
 Route::post('/logout', [OtpAuthController::class, 'logout'])->name('logout');
@@ -79,7 +73,6 @@ Route::middleware('auth')->group(function () {
         Route::post('/promocodes', [PromocodeController::class, 'store'])->name('promocodes.store');
         Route::patch('/promocodes/{promocode}', [PromocodeController::class, 'update'])->name('promocodes.update');
         Route::delete('/promocodes/{promocode}', [PromocodeController::class, 'destroy'])->name('promocodes.destroy');
-        Route::post('/promocodes/{promocode}/broadcast', [PromocodeController::class, 'broadcastPromo'])->name('promocodes.broadcast');
         Route::get('/categories', [CategoryController::class, 'index'])->name('categories.index');
         Route::get('/categories/create', [CategoryController::class, 'create'])->name('categories.create');
         Route::post('/categories', [CategoryController::class, 'store'])->name('categories.store');
@@ -110,5 +103,3 @@ Route::middleware('auth')->group(function () {
 });
 
 Route::post('/webhooks/yookassa', YooKassaWebhookController::class)->name('webhooks.yookassa');
-// Telegram Bot API: webhook шлёт POST JSON (Update). CSRF исключён в VerifyCsrfToken.
-Route::post('/webhook/telegram', [TelegramController::class, 'handle'])->name('webhook.telegram');

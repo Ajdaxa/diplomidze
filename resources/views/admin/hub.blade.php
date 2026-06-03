@@ -50,7 +50,7 @@
         </a>
         <a href="{{ route('admin.promocodes.index') }}" class="group rounded-xl border border-neutral-200 bg-white p-6 shadow-sm transition hover:border-black">
             <h2 class="text-sm font-semibold uppercase tracking-wider">Промокоды</h2>
-            <p class="mt-2 text-xs text-neutral-500">Рассылки в Telegram</p>
+            <p class="mt-2 text-xs text-neutral-500">Создание и управление кодами</p>
         </a>
     </div>
 @endsection

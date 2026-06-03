@@ -2,10 +2,8 @@
 
 namespace App\Http\Controllers\Admin;
 
-use App\Jobs\SendPromoMessageJob;
 use App\Http\Controllers\Controller;
 use App\Models\Promocode;
-use App\Models\User;
 use Illuminate\Http\Request;
 
 class PromocodeController extends Controller
@@ -36,23 +34,6 @@ class PromocodeController extends Controller
         ]);
 
         return back()->with('status', 'Промокод создан.');
-    }
-
-    public function broadcastPromo(Promocode $promocode)
-    {
-        $discountText = $promocode->type === 'percent'
-            ? "{$promocode->value}%"
-            : "{$promocode->value} ₽";
-
-        User::query()
-            ->whereNotNull('telegram_chat_id')
-            ->chunk(100, function ($users) use ($promocode, $discountText) {
-                foreach ($users as $user) {
-                    SendPromoMessageJob::dispatch($user->id, $promocode->code, $discountText);
-                }
-            });
-
-        return back()->with('status', 'Рассылка поставлена в очередь.');
     }
 
     public function update(Request $request, Promocode $promocode)
