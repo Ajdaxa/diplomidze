@@ -20,7 +20,13 @@ class StoreDemoDataSeeder extends Seeder
     public function purgeDemoData(): void
     {
         $userIds = User::query()
-            ->where('email', 'like', '%'.self::DEMO_EMAIL_DOMAIN)
+            ->where(function ($q): void {
+                $q->where('email', 'like', '%'.self::DEMO_EMAIL_DOMAIN)
+                    ->orWhereIn('email', [
+                        'courier2@dyab.local',
+                        'courier3@dyab.local',
+                    ]);
+            })
             ->pluck('id');
 
         if ($userIds->isNotEmpty()) {
@@ -44,22 +50,28 @@ class StoreDemoDataSeeder extends Seeder
         }
 
         Role::findOrCreate('client', 'web');
+        Role::findOrCreate('courier', 'web');
 
         $buyers = $this->ensureDemoBuyers();
-        $courier = User::query()->where('email', 'courier@dyab.local')->first();
+        $couriers = $this->ensureDemoCouriers();
         $promocodes = $this->seedPromocodes();
 
         if (Order::query()->whereIn('user_id', $buyers->pluck('id'))->exists()) {
             $this->command?->warn('Демо-заказы уже есть. Для пересоздания: php artisan store:seed-demo --fresh');
         } else {
-            $this->seedOrders($buyers, $products, $courier, $promocodes);
+            $this->seedOrders($buyers, $products, $couriers, $promocodes);
         }
+
+        Review::query()
+            ->whereHas('user', fn ($q) => $q->where('email', 'like', '%'.self::DEMO_EMAIL_DOMAIN))
+            ->delete();
 
         $createdReviews = $this->seedReviews($buyers, $products);
 
         $this->command?->info(sprintf(
-            'Готово: %d покупателей, %d промокодов, %d заказов, %d отзывов.',
+            'Готово: %d покупателей, %d курьеров, %d промокодов, %d заказов, %d отзывов.',
             $buyers->count(),
+            $couriers->count(),
             Promocode::query()->whereIn('code', ['DYAB10', 'WELCOME15', 'SPRING500', 'VIP20', 'SUMMER25'])->count(),
             Order::query()->whereIn('user_id', $buyers->pluck('id'))->count(),
             $createdReviews
@@ -67,21 +79,50 @@ class StoreDemoDataSeeder extends Seeder
     }
 
     /** @return \Illuminate\Support\Collection<int, User> */
+    private function ensureDemoCouriers(): \Illuminate\Support\Collection
+    {
+        $profiles = [
+            ['name' => 'Иван Петров', 'phone' => '+79001234567', 'email' => 'courier@dyab.local', 'commission' => 10],
+            ['name' => 'Артём Кузнецов', 'phone' => '+79002345678', 'email' => 'courier2@dyab.local', 'commission' => 12],
+            ['name' => 'Максим Орлов', 'phone' => '+79003456789', 'email' => 'courier3@dyab.local', 'commission' => 15],
+        ];
+
+        $couriers = collect();
+
+        foreach ($profiles as $profile) {
+            $courier = User::query()->updateOrCreate(
+                ['email' => $profile['email']],
+                [
+                    'name' => $profile['name'],
+                    'phone' => $profile['phone'],
+                    'password' => Hash::make('Courier12345!'),
+                    'role' => 'courier',
+                    'courier_commission_percent' => $profile['commission'],
+                ]
+            );
+            $courier->syncRoles(['courier']);
+            $couriers->push($courier);
+        }
+
+        return $couriers;
+    }
+
+    /** @return \Illuminate\Support\Collection<int, User> */
     private function ensureDemoBuyers(): \Illuminate\Support\Collection
     {
         $profiles = [
-            ['name' => 'Лейла Мамедова', 'phone' => '+994501234567'],
-            ['name' => 'Руслан Гасанов', 'phone' => '+994502345678'],
-            ['name' => 'Айгюн Керимова', 'phone' => '+994503456789'],
-            ['name' => 'Эмин Ибрагимов', 'phone' => '+994504567890'],
-            ['name' => 'Сабина Алиева', 'phone' => '+994505678901'],
-            ['name' => 'Тимур Набиев', 'phone' => '+994506789012'],
-            ['name' => 'Гюльнара Рзаева', 'phone' => '+994507890123'],
-            ['name' => 'Камран Сулейманов', 'phone' => '+994508901234'],
-            ['name' => 'Динара Гусейнова', 'phone' => '+994509012345'],
-            ['name' => 'Орхан Мирзоев', 'phone' => '+994510123456'],
-            ['name' => 'Наргиз Ахмедова', 'phone' => '+994511234567'],
-            ['name' => 'Вугар Бабаев', 'phone' => '+994512345678'],
+            ['name' => 'Анна Смирнова', 'phone' => '+79001112233'],
+            ['name' => 'Дмитрий Волков', 'phone' => '+79002223344'],
+            ['name' => 'Елена Козлова', 'phone' => '+79003334455'],
+            ['name' => 'Сергей Морозов', 'phone' => '+79004445566'],
+            ['name' => 'Мария Новикова', 'phone' => '+79005556677'],
+            ['name' => 'Алексей Соколов', 'phone' => '+79006667788'],
+            ['name' => 'Ольга Лебедева', 'phone' => '+79007778899'],
+            ['name' => 'Никита Егоров', 'phone' => '+79008889900'],
+            ['name' => 'Виктория Павлова', 'phone' => '+79009990011'],
+            ['name' => 'Кирилл Фёдоров', 'phone' => '+79001001122'],
+            ['name' => 'Дарья Михайлова', 'phone' => '+79002112233'],
+            ['name' => 'Роман Белов', 'phone' => '+79003223344'],
         ];
 
         $users = collect();
@@ -186,41 +227,48 @@ class StoreDemoDataSeeder extends Seeder
     /**
      * @param  \Illuminate\Support\Collection<int, User>  $buyers
      * @param  \Illuminate\Support\Collection<int, Product>  $products
+     * @param  \Illuminate\Support\Collection<int, User>  $couriers
      * @param  array<string, Promocode>  $promocodes
      */
     private function seedOrders(
         \Illuminate\Support\Collection $buyers,
         \Illuminate\Support\Collection $products,
-        ?User $courier,
+        \Illuminate\Support\Collection $couriers,
         array $promocodes,
     ): void {
         $addresses = [
-            ['full' => 'г. Баку, ул. Низами, 45, кв. 12'],
-            ['full' => 'г. Баку, пр. Нефтяников, 102'],
-            ['full' => 'г. Сумгаит, мкр. 26, д. 8, кв. 34'],
-            ['full' => 'г. Баку, ул. Ахмедли, 15, подъезд 2'],
-            ['full' => 'г. Гянджа, ул. Ататюрка, 77'],
-            ['full' => 'г. Баку, бул. Нахичеванский, 3, офис 210'],
+            ['full' => 'г. Москва, ул. Тверская, 12, кв. 45'],
+            ['full' => 'г. Москва, Ленинский проспект, 88, подъезд 3'],
+            ['full' => 'г. Санкт-Петербург, Невский проспект, 102'],
+            ['full' => 'г. Казань, ул. Баумана, 15, кв. 7'],
+            ['full' => 'г. Екатеринбург, ул. Малышева, 36'],
+            ['full' => 'г. Москва, ул. Арбат, 24, офис 210'],
         ];
 
         $scenarios = [
-            ['status' => 'delivered', 'days_ago' => 18, 'buyer_idx' => 0, 'product_idxs' => [0], 'promo' => null],
-            ['status' => 'delivered', 'days_ago' => 14, 'buyer_idx' => 1, 'product_idxs' => [1, 2], 'promo' => 'DYAB10'],
-            ['status' => 'delivered', 'days_ago' => 11, 'buyer_idx' => 2, 'product_idxs' => [2], 'promo' => null],
-            ['status' => 'delivered', 'days_ago' => 9, 'buyer_idx' => 3, 'product_idxs' => [3], 'promo' => null],
-            ['status' => 'delivered', 'days_ago' => 6, 'buyer_idx' => 4, 'product_idxs' => [4, 5], 'promo' => 'WELCOME15'],
-            ['status' => 'delivered', 'days_ago' => 3, 'buyer_idx' => 5, 'product_idxs' => [0], 'promo' => null],
-            ['status' => 'paid', 'days_ago' => 2, 'buyer_idx' => 6, 'product_idxs' => [6], 'promo' => null],
-            ['status' => 'paid', 'days_ago' => 1, 'buyer_idx' => 7, 'product_idxs' => [7, 8], 'promo' => null],
-            ['status' => 'in_delivery', 'days_ago' => 1, 'buyer_idx' => 8, 'product_idxs' => [9], 'promo' => null, 'courier' => true],
-            ['status' => 'arrived', 'days_ago' => 0, 'buyer_idx' => 9, 'product_idxs' => [10], 'promo' => null, 'courier' => true],
-            ['status' => 'pending', 'days_ago' => 0, 'buyer_idx' => 10, 'product_idxs' => [11], 'promo' => null],
-            ['status' => 'cancelled', 'days_ago' => 5, 'buyer_idx' => 11, 'product_idxs' => [12], 'promo' => null],
+            ['status' => 'delivered', 'days_ago' => 21, 'buyer_idx' => 0, 'product_idxs' => [0], 'promo' => null, 'courier_idx' => 0],
+            ['status' => 'delivered', 'days_ago' => 18, 'buyer_idx' => 1, 'product_idxs' => [1, 2], 'promo' => 'DYAB10', 'courier_idx' => 1],
+            ['status' => 'delivered', 'days_ago' => 14, 'buyer_idx' => 2, 'product_idxs' => [2], 'promo' => null, 'courier_idx' => 2],
+            ['status' => 'delivered', 'days_ago' => 11, 'buyer_idx' => 3, 'product_idxs' => [3], 'promo' => null, 'courier_idx' => 0],
+            ['status' => 'delivered', 'days_ago' => 9, 'buyer_idx' => 4, 'product_idxs' => [4, 5], 'promo' => 'WELCOME15', 'courier_idx' => 1],
+            ['status' => 'delivered', 'days_ago' => 6, 'buyer_idx' => 5, 'product_idxs' => [0], 'promo' => null, 'courier_idx' => 2],
+            ['status' => 'delivered', 'days_ago' => 4, 'buyer_idx' => 6, 'product_idxs' => [6, 7], 'promo' => null, 'courier_idx' => 0],
+            ['status' => 'delivered', 'days_ago' => 2, 'buyer_idx' => 7, 'product_idxs' => [8], 'promo' => 'SPRING500', 'courier_idx' => 1],
+            ['status' => 'delivered', 'days_ago' => 1, 'buyer_idx' => 8, 'product_idxs' => [9], 'promo' => null, 'courier_idx' => 2, 'leave_at_door' => true],
+            ['status' => 'paid', 'days_ago' => 2, 'buyer_idx' => 9, 'product_idxs' => [10], 'promo' => null],
+            ['status' => 'paid', 'days_ago' => 1, 'buyer_idx' => 10, 'product_idxs' => [11, 12], 'promo' => null],
+            ['status' => 'in_delivery', 'days_ago' => 1, 'buyer_idx' => 0, 'product_idxs' => [13], 'promo' => null, 'courier_idx' => 0],
+            ['status' => 'arrived', 'days_ago' => 0, 'buyer_idx' => 1, 'product_idxs' => [14], 'promo' => null, 'courier_idx' => 1],
+            ['status' => 'pending', 'days_ago' => 0, 'buyer_idx' => 2, 'product_idxs' => [15], 'promo' => null],
+            ['status' => 'cancelled', 'days_ago' => 5, 'buyer_idx' => 3, 'product_idxs' => [16], 'promo' => null],
         ];
 
         foreach ($scenarios as $scenario) {
             $buyer = $buyers[$scenario['buyer_idx'] % $buyers->count()];
             $createdAt = now()->subDays($scenario['days_ago'])->setTime(random_int(10, 20), random_int(0, 59));
+            $courier = isset($scenario['courier_idx'])
+                ? $couriers[$scenario['courier_idx'] % $couriers->count()]
+                : null;
 
             $lineItems = [];
             $total = 0.0;
@@ -259,10 +307,11 @@ class StoreDemoDataSeeder extends Seeder
             ): void {
                 $order = Order::query()->create([
                     'user_id' => $buyer->id,
-                    'courier_id' => ($scenario['courier'] ?? false) && $courier ? $courier->id : null,
+                    'courier_id' => $courier?->id,
                     'total_price' => round($total, 2),
                     'status' => $scenario['status'],
                     'address' => $addresses[array_rand($addresses)],
+                    'leave_at_door' => (bool) ($scenario['leave_at_door'] ?? false),
                     'promocode_id' => $promo?->id,
                     'yookassa_payment_id' => $scenario['status'] === 'pending'
                         ? null
@@ -292,21 +341,22 @@ class StoreDemoDataSeeder extends Seeder
     private function seedReviews(\Illuminate\Support\Collection $buyers, \Illuminate\Support\Collection $products): int
     {
         $reviewTexts = [
-            ['rating' => 5, 'body' => 'Заказывала на мероприятие — село идеально, ткань не мнётся после дороги. Доставка в Баку заняла два дня.', 'status' => Review::STATUS_APPROVED],
-            ['rating' => 4, 'body' => 'Крой структурный, на прохладный вечер самое то. Единственное — плечи чуть свободнее, чем на фото модели.', 'status' => Review::STATUS_APPROVED],
-            ['rating' => 5, 'body' => 'Размер подошёл с первого раза, таблица размеров на сайте помогла. Ношу уже третью неделю — швы ровные.', 'status' => Review::STATUS_APPROVED],
-            ['rating' => 5, 'body' => 'Подарил супруге — восторг. Упаковка без лишнего пластика, всё аккуратно сложено.', 'status' => Review::STATUS_APPROVED],
-            ['rating' => 4, 'body' => 'Цвет совпал с карточкой товара. После деликатной стирки форма не изменилась.', 'status' => Review::STATUS_APPROVED],
-            ['rating' => 5, 'body' => 'Долго выбирал между M и L — в поддержке быстро подсказали по обхвату. Попал в размер.', 'status' => Review::STATUS_APPROVED],
-            ['rating' => 3, 'body' => 'Качество хорошее, но доставка в регион заняла на день дольше обещанного. Курьер заранее позвонил.', 'status' => Review::STATUS_APPROVED],
-            ['rating' => 5, 'body' => 'Первый заказ в Дəb — приятно удивили скоростью сборки и связью по статусу.', 'status' => Review::STATUS_APPROVED],
-            ['rating' => 4, 'body' => 'Удобно на длинной прогулке, стелька мягкая. Шнурки хотелось бы чуть плотнее.', 'status' => Review::STATUS_APPROVED],
-            ['rating' => 5, 'body' => 'Лимитированная позиция — рад, что успел. Материал плотный, выглядит дороже цены.', 'status' => Review::STATUS_APPROVED],
-            ['rating' => 4, 'body' => 'Сумка вместительная, молния ходит плавно. Кожзам чуть жёстче, чем ожидала, но носится отлично.', 'status' => Review::STATUS_APPROVED],
-            ['rating' => 5, 'body' => 'Отличное соотношение цены и ткани. Вернусь за базовыми вещами в чёрном.', 'status' => Review::STATUS_APPROVED],
-            ['rating' => 5, 'body' => 'Минималистичный стиль, как на лукбуке. Сочетается с джинсами и юбкой-карандаш.', 'status' => Review::STATUS_APPROVED],
-            ['rating' => 4, 'body' => 'Товар понравился, жду публикации отзыва на сайте — отправила два дня назад.', 'status' => Review::STATUS_PENDING],
-            ['rating' => 5, 'body' => 'Взяла со скидкой по промокоду — вышло выгодно. Посадка по фигуре аккуратная.', 'status' => Review::STATUS_APPROVED],
+            ['rating' => 5, 'body' => 'Заказывала на мероприятие — село идеально, ткань не мнётся. Доставка пришла на следующий день.', 'status' => Review::STATUS_APPROVED],
+            ['rating' => 4, 'body' => 'Крой структурный, на прохладный вечер самое то. Плечи чуть свободнее, чем на фото.', 'status' => Review::STATUS_APPROVED],
+            ['rating' => 5, 'body' => 'Размер подошёл с первого раза, таблица размеров помогла. Швы ровные.', 'status' => Review::STATUS_APPROVED],
+            ['rating' => 5, 'body' => 'Подарил супруге — восторг. Упаковка аккуратная, без лишнего пластика.', 'status' => Review::STATUS_APPROVED],
+            ['rating' => 4, 'body' => 'Цвет совпал с карточкой товара. После стирки форма не изменилась.', 'status' => Review::STATUS_APPROVED],
+            ['rating' => 5, 'body' => 'В поддержке быстро подсказали по размеру. Попал в размер с первого раза.', 'status' => Review::STATUS_APPROVED],
+            ['rating' => 3, 'body' => 'Качество хорошее, доставка заняла на день дольше. Курьер заранее позвонил.', 'status' => Review::STATUS_APPROVED],
+            ['rating' => 5, 'body' => 'Первый заказ в Дəb — приятно удивили скоростью и связью по статусу.', 'status' => Review::STATUS_APPROVED],
+            ['rating' => 4, 'body' => 'Удобно на прогулке, материал приятный. Очень доволен покупкой.', 'status' => Review::STATUS_APPROVED],
+            ['rating' => 5, 'body' => 'Лимитированная позиция — рад, что успел. Выглядит дороже своей цены.', 'status' => Review::STATUS_APPROVED],
+            ['rating' => 4, 'body' => 'Сумка вместительная, молния ходит плавно. Ношу каждый день.', 'status' => Review::STATUS_APPROVED],
+            ['rating' => 5, 'body' => 'Отличное соотношение цены и качества. Вернусь за базовыми вещами.', 'status' => Review::STATUS_APPROVED],
+            ['rating' => 5, 'body' => 'Минималистичный стиль, как на сайте. Сочетается с разной одеждой.', 'status' => Review::STATUS_APPROVED],
+            ['rating' => 4, 'body' => 'Товар понравился, жду публикации отзыва — отправила два дня назад.', 'status' => Review::STATUS_PENDING],
+            ['rating' => 5, 'body' => 'Взяла со скидкой по промокоду — вышло выгодно. Посадка аккуратная.', 'status' => Review::STATUS_APPROVED],
+            ['rating' => 4, 'body' => 'Курьер оставил у двери, как просила. Всё пришло в целости.', 'status' => Review::STATUS_PENDING],
         ];
 
         $count = 0;

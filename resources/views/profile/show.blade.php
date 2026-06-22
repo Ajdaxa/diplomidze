@@ -6,6 +6,8 @@
     <div class="mx-auto w-full max-w-3xl">
         <x-page-heading title="Профиль" lede="Данные аккаунта и история заказов" />
 
+        @include('profile.partials.courier-stats')
+
         <div class="mb-8 rounded-2xl border border-neutral-200 bg-gradient-to-br from-neutral-900 to-neutral-800 p-5 text-white sm:p-6">
             <p class="text-[10px] font-semibold uppercase tracking-[0.25em] text-white/70">Баллы за покупки</p>
             <p class="mt-3 text-3xl font-light tabular-nums">{{ number_format($user->loyalty_points, 0, '.', ' ') }} <span class="text-lg">баллов</span></p>
@@ -61,6 +63,22 @@
                     </ul>
                     @if(is_array($order->address))
                         <p class="mt-4 text-xs text-neutral-500">Адрес: {{ $order->address['full'] ?? json_encode($order->address) }}</p>
+                    @endif
+                    @if($order->leave_at_door)
+                        <div class="mt-3 inline-flex items-center gap-2 rounded-full bg-amber-50 px-3 py-1 text-[11px] font-medium text-amber-900 ring-1 ring-amber-100">
+                            <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M3 21h18M5 21V9l7-5 7 5v12M9 21v-6h6v6" />
+                            </svg>
+                            Оставить у двери
+                        </div>
+                    @endif
+                    @if($order->status === 'delivered' && $order->delivery_photo)
+                        <div class="mt-4 overflow-hidden rounded-xl border border-neutral-200">
+                            <p class="border-b border-neutral-100 bg-neutral-50 px-3 py-2 text-[10px] font-semibold uppercase tracking-wider text-neutral-500">Фото доставки</p>
+                            <a href="{{ $order->deliveryPhotoUrl() }}" target="_blank" rel="noopener">
+                                <img src="{{ $order->deliveryPhotoUrl() }}" alt="Фото доставки" class="max-h-48 w-full object-cover">
+                            </a>
+                        </div>
                     @endif
                     @if(! in_array($order->status, ['delivered', 'cancelled'], true))
                         <form method="POST" action="{{ route('orders.cancel', $order) }}" class="mt-4" onsubmit="return confirm('Отменить заказ?');">

@@ -34,7 +34,7 @@
     </div>
 
     <div id="filter-panel" class="hidden border-b border-neutral-200 bg-neutral-50 px-2 py-4">
-        <input id="product-search" type="search" class="mb-3 w-full border border-neutral-300 bg-white px-3 py-2 text-sm" placeholder="Поиск (в т.ч. с опечатками)" value="{{ $filters['q'] ?? '' }}">
+        <input id="product-search" type="search" class="mb-3 w-full border border-neutral-300 bg-white px-3 py-2 text-sm" placeholder="Поиск" value="{{ $filters['q'] ?? '' }}">
         <p class="mb-2 text-xs font-semibold uppercase tracking-wider text-neutral-500">Пол</p>
         <div class="mb-4 flex flex-wrap gap-2">
             @foreach(['' => 'Любой', 'female' => 'Женский', 'male' => 'Мужской', 'unisex' => 'Унисекс'] as $gKey => $gLabel)

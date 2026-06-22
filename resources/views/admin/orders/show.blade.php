@@ -17,6 +17,7 @@
                     <div><dt class="text-stone-500">Сумма</dt><dd class="font-medium">{{ number_format($order->total_price, 2, '.', ' ') }} ₽</dd></div>
                     <div><dt class="text-stone-500">Создан</dt><dd class="font-medium">{{ $order->created_at->format('d.m.Y H:i') }}</dd></div>
                     <div><dt class="text-stone-500">Оплачен</dt><dd class="font-medium">{{ $order->paid_at?->format('d.m.Y H:i') ?? '—' }}</dd></div>
+                    <div><dt class="text-stone-500">Доставка</dt><dd class="font-medium">{{ $order->leave_at_door ? 'У двери' : 'Обычная' }}</dd></div>
                     <div><dt class="text-stone-500">YooKassa payment id</dt><dd class="break-all font-mono text-xs">{{ $order->yookassa_payment_id ?? '—' }}</dd></div>
                 </dl>
             </div>
@@ -25,7 +26,7 @@
                 <h2 class="text-xs font-semibold uppercase tracking-wider text-stone-500">Клиент</h2>
                 @if($order->user)
                     <p class="mt-3 font-medium">
-                        @if($order->user->isStoreClient())
+                        @if($isAdmin && $order->user->isStoreClient())
                             <a href="{{ route('admin.users.show', $order->user) }}" class="underline decoration-stone-300 underline-offset-2 hover:decoration-black">{{ $order->user->name }}</a>
                         @else
                             {{ $order->user->name }}
@@ -45,7 +46,46 @@
                 @else
                     <p class="mt-3 text-sm text-stone-500">—</p>
                 @endif
+
+                @if($order->leave_at_door)
+                    <div class="mt-4 flex items-start gap-3 rounded-xl border border-amber-100 bg-amber-50/80 px-4 py-3">
+                        <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white text-amber-700 ring-1 ring-amber-100">
+                            <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M3 21h18M5 21V9l7-5 7 5v12M9 21v-6h6v6" />
+                            </svg>
+                        </span>
+                        <div>
+                            <p class="text-sm font-semibold text-amber-950">Оставить у двери</p>
+                            <p class="mt-0.5 text-xs text-amber-800/90">Клиент выбрал бесконтактную доставку у двери</p>
+                        </div>
+                    </div>
+                @endif
             </div>
+
+            @if($order->status === 'delivered' && $order->delivery_photo)
+                <div class="overflow-hidden rounded-xl border border-stone-200 bg-white">
+                    <div class="border-b border-stone-100 px-5 py-4">
+                        <h2 class="text-xs font-semibold uppercase tracking-wider text-stone-500">Подтверждение доставки</h2>
+                        <p class="mt-1 text-sm text-stone-600">Фото заказа у двери, приложенное курьером</p>
+                    </div>
+                    <a href="{{ $order->deliveryPhotoUrl() }}" target="_blank" rel="noopener" class="group block">
+                        <img
+                            src="{{ $order->deliveryPhotoUrl() }}"
+                            alt="Фото доставки заказа #{{ $order->id }}"
+                            class="max-h-[28rem] w-full object-cover transition duration-300 group-hover:scale-[1.01]"
+                        >
+                    </a>
+                    <div class="flex items-center justify-between gap-3 border-t border-stone-100 px-5 py-3 text-xs text-stone-500">
+                        <span>Нажмите на фото, чтобы открыть в полном размере</span>
+                        <a href="{{ $order->deliveryPhotoUrl() }}" target="_blank" rel="noopener" class="font-medium text-stone-800 underline decoration-stone-300 underline-offset-2 hover:decoration-black">Открыть</a>
+                    </div>
+                </div>
+            @elseif($order->leave_at_door && $order->status !== 'delivered')
+                <div class="rounded-xl border border-dashed border-stone-200 bg-stone-50 p-5">
+                    <h2 class="text-xs font-semibold uppercase tracking-wider text-stone-500">Подтверждение доставки</h2>
+                    <p class="mt-2 text-sm text-stone-500">Фото появится здесь после завершения доставки курьером</p>
+                </div>
+            @endif
 
             <div class="rounded-xl border border-stone-200 bg-white p-5">
                 <h2 class="text-xs font-semibold uppercase tracking-wider text-stone-500">Состав заказа</h2>

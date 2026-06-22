@@ -1,18 +1,24 @@
 @extends('layouts.admin')
 
 @section('title', 'Товары')
-@section('heading', 'Каталог товаров')
+@section('heading', $isAdmin ? 'Каталог товаров' : 'Каталог товаров (просмотр)')
 
 @section('content')
     <div class="mb-6 flex flex-wrap items-center justify-between gap-4">
         <p class="text-sm text-neutral-600">
-            Список товаров. Скидки задаются в разделе
-            <a href="{{ route('admin.sales.index') }}" class="font-medium text-black underline">«Скидки на товары»</a>.
+            @if($isAdmin)
+                Список товаров. Скидки задаются в разделе
+                <a href="{{ route('admin.sales.index') }}" class="font-medium text-black underline">«Скидки на товары»</a>.
+            @else
+                Просмотр каталога: цены, скидки и остатки на складе.
+            @endif
         </p>
-        <div class="flex flex-wrap gap-2">
-            <a href="{{ route('admin.sales.index') }}" class="rounded border border-neutral-300 px-4 py-2 text-sm font-medium hover:border-black">Скидки</a>
-            <a href="{{ route('admin.products.create') }}" class="rounded bg-black px-4 py-2 text-sm font-medium uppercase tracking-wider text-white">Добавить товар</a>
-        </div>
+        @if($isAdmin)
+            <div class="flex flex-wrap gap-2">
+                <a href="{{ route('admin.sales.index') }}" class="rounded border border-neutral-300 px-4 py-2 text-sm font-medium hover:border-black">Скидки</a>
+                <a href="{{ route('admin.products.create') }}" class="rounded bg-black px-4 py-2 text-sm font-medium uppercase tracking-wider text-white">Добавить товар</a>
+            </div>
+        @endif
     </div>
 
     <div class="overflow-hidden rounded-xl border border-neutral-200 bg-white">
@@ -25,7 +31,9 @@
                     <th class="px-4 py-3">Цена</th>
                     <th class="px-4 py-3">Скидка</th>
                     <th class="px-4 py-3">Остаток</th>
-                    <th class="px-4 py-3 text-right">Действия</th>
+                    @if($isAdmin)
+                        <th class="px-4 py-3 text-right">Действия</th>
+                    @endif
                 </tr>
             </thead>
             <tbody>
@@ -64,13 +72,15 @@
                             @endif
                         </td>
                         <td class="px-4 py-3">{{ $product->stock }}</td>
-                        <td class="px-4 py-3 text-right">
-                            <a href="{{ route('admin.products.edit', $product) }}" class="mr-2 text-neutral-600 hover:text-black">Изменить</a>
-                            <form action="{{ route('admin.products.destroy', $product) }}" method="POST" class="inline" onsubmit="return confirm('Удалить товар?');">
-                                @csrf @method('DELETE')
-                                <button type="submit" class="text-rose-600 hover:underline">Удалить</button>
-                            </form>
-                        </td>
+                        @if($isAdmin)
+                            <td class="px-4 py-3 text-right">
+                                <a href="{{ route('admin.products.edit', $product) }}" class="mr-2 text-neutral-600 hover:text-black">Изменить</a>
+                                <form action="{{ route('admin.products.destroy', $product) }}" method="POST" class="inline" onsubmit="return confirm('Удалить товар?');">
+                                    @csrf @method('DELETE')
+                                    <button type="submit" class="text-rose-600 hover:underline">Удалить</button>
+                                </form>
+                            </td>
+                        @endif
                     </tr>
                 @endforeach
             </tbody>

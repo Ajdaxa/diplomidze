@@ -38,9 +38,13 @@
                     @forelse($users as $user)
                         <tr class="transition hover:bg-neutral-50">
                             <td class="px-4 py-3">
-                                <a href="{{ route('admin.users.show', $user) }}" class="font-medium text-neutral-900 underline decoration-neutral-300 underline-offset-2 hover:decoration-black">
-                                    {{ $user->name }}
-                                </a>
+                                @if($isAdmin)
+                                    <a href="{{ route('admin.users.show', $user) }}" class="font-medium text-neutral-900 underline decoration-neutral-300 underline-offset-2 hover:decoration-black">
+                                        {{ $user->name }}
+                                    </a>
+                                @else
+                                    <span class="font-medium text-neutral-900">{{ $user->name }}</span>
+                                @endif
                                 <p class="text-xs text-neutral-400">#{{ $user->id }}</p>
                             </td>
                             <td class="px-4 py-3 text-neutral-600">

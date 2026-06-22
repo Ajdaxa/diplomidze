@@ -18,6 +18,8 @@ class Order extends Model
         'total_price',
         'status',
         'address',
+        'leave_at_door',
+        'delivery_photo',
         'promocode_id',
         'yookassa_payment_id',
         'paid_at',
@@ -25,8 +27,23 @@ class Order extends Model
 
     protected $casts = [
         'address' => 'array',
+        'leave_at_door' => 'boolean',
         'paid_at' => 'datetime',
     ];
+
+    public function requiresDoorPhoto(): bool
+    {
+        return (bool) $this->leave_at_door;
+    }
+
+    public function deliveryPhotoUrl(): ?string
+    {
+        if (! $this->delivery_photo) {
+            return null;
+        }
+
+        return asset('storage/'.$this->delivery_photo);
+    }
 
     public function user(): BelongsTo
     {

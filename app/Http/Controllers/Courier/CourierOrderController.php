@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Courier;
 use App\Http\Controllers\Controller;
 use App\Models\Order;
 use App\Models\Product;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 
@@ -31,12 +32,27 @@ class CourierOrderController extends Controller
         return back()->with('status', 'Статус обновлен: на месте.');
     }
 
-    public function delivered(Order $order)
+    public function delivered(Request $request, Order $order)
     {
         $this->authorizeCourierOrder($order);
         $this->abortIfTerminal($order);
 
-        DB::transaction(function () use ($order): void {
+        $rules = [
+            'delivery_photo' => [$order->requiresDoorPhoto() ? 'required' : 'nullable', 'image', 'max:5120'],
+        ];
+
+        $validated = $request->validate($rules, [
+            'delivery_photo.required' => 'Для заказа «у двери» нужно приложить фото доставки.',
+            'delivery_photo.image' => 'Файл должен быть изображением.',
+            'delivery_photo.max' => 'Фото не должно превышать 5 МБ.',
+        ]);
+
+        $photoPath = null;
+        if ($request->hasFile('delivery_photo')) {
+            $photoPath = $request->file('delivery_photo')->store('deliveries', 'public');
+        }
+
+        DB::transaction(function () use ($order, $photoPath): void {
             /** @var Order|null $locked */
             $locked = Order::query()->with('items')->lockForUpdate()->find($order->id);
             if (! $locked) {
@@ -53,7 +69,10 @@ class CourierOrderController extends Controller
                 }
             }
 
-            $locked->update(['status' => 'delivered']);
+            $locked->update([
+                'status' => 'delivered',
+                'delivery_photo' => $photoPath ?? $locked->delivery_photo,
+            ]);
         });
 
         return back()->with('status', 'Заказ завершен.');

@@ -70,6 +70,7 @@
                         <input type="hidden" name="address[full]" id="address-full">
                         <div id="address-suggestions" class="mt-2 max-h-48 space-y-1 overflow-y-auto"></div>
                     </div>
+
                     <x-floating-input id="checkout-promocode" name="promocode" label="Промокод (необязательно)" :value="old('promocode')" autocomplete="off" />
                     @if($loyaltyPoints > 0 && $maxLoyaltySpend > 0)
                         <div class="rounded-xl border border-neutral-200 bg-neutral-50 p-4">
@@ -81,6 +82,9 @@
                             </label>
                         </div>
                     @endif
+
+                    <x-leave-at-door-toggle :checked="(bool) old('leave_at_door')" />
+
                     <div class="space-y-3 rounded-xl border border-neutral-200 bg-neutral-50/80 p-4 text-xs leading-relaxed text-neutral-600">
                         <label class="flex cursor-pointer items-start gap-3">
                             <input type="checkbox" name="accept_offer" value="1" required class="mt-0.5 rounded border-neutral-400" @checked(old('accept_offer'))>

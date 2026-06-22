@@ -94,6 +94,7 @@ class CheckoutController extends Controller
         $validated = $request->validate([
             'address' => ['required', 'array'],
             'address.full' => ['required', 'string'],
+            'leave_at_door' => ['nullable', 'boolean'],
             'promocode' => ['nullable', 'string'],
             'spend_loyalty' => ['nullable', 'boolean'],
             'accept_offer' => ['accepted'],
@@ -151,6 +152,7 @@ class CheckoutController extends Controller
             'total_price' => $summary['total'],
             'status' => 'pending',
             'address' => $validated['address'],
+            'leave_at_door' => $request->boolean('leave_at_door'),
             'promocode_id' => $promocode?->id,
         ]);
 

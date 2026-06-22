@@ -7,50 +7,11 @@
     <meta name="theme-color" content="#ffffff">
     <meta name="description" content="@yield('meta_description', 'Дəб — минималистичный интернет-магазин одежды и аксессуаров. Каталог, доставка, оплата онлайн.')">
     <title>@hasSection('title')@yield('title') — Дəб@elseДəб — интернет-магазин@endif</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = { theme: { extend: { fontFamily: { sans: ['Inter', 'system-ui', 'Segoe UI', 'sans-serif'] } } } };
-    </script>
-    <style>
-        :root {
-            --container: 80rem;
-            --pad-x: clamp(1rem, 4vw, 1.75rem);
-            --pad-y-section: clamp(1.5rem, 4vw, 2.5rem);
-            --text-lede: clamp(0.8125rem, 0.8rem + 0.35vw, 0.9375rem);
-        }
-        html { scroll-behavior: smooth; }
-        @media (prefers-reduced-motion: reduce) {
-            html { scroll-behavior: auto; }
-            *, *::before, *::after {
-                animation-duration: 0.01ms !important;
-                animation-iteration-count: 1 !important;
-                transition-duration: 0.01ms !important;
-            }
-        }
-        body { overflow-x: hidden; font-family: Inter, system-ui, 'Segoe UI', sans-serif; }
-        :focus-visible { outline: 2px solid #171717; outline-offset: 2px; }
-        .container-app {
-            width: 100%;
-            max-width: var(--container);
-            margin-left: auto;
-            margin-right: auto;
-            padding-left: var(--pad-x);
-            padding-right: var(--pad-x);
-        }
-        .tabs-scroll {
-            -webkit-overflow-scrolling: touch;
-            scrollbar-width: thin;
-            scrollbar-color: #a3a3a3 #f5f5f5;
-        }
-        .tabs-scroll::-webkit-scrollbar { height: 4px; }
-        .tabs-scroll::-webkit-scrollbar-thumb { background: #737373; border-radius: 4px; }
-        ::-webkit-scrollbar { width: 6px; height: 6px; }
-        ::-webkit-scrollbar-track { background: #fafafa; }
-        ::-webkit-scrollbar-thumb { background: #171717; border-radius: 3px; }
-    </style>
+    <link rel="icon" href="{{ asset('favicon.svg') }}" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="{{ asset('apple-touch-icon.svg') }}">
+    <link rel="manifest" href="{{ asset('site.webmanifest') }}">
+    @vite(['resources/css/app.css'])
+    @stack('head')
 </head>
 @php
     $cartCount = collect(session('cart', []))->sum();

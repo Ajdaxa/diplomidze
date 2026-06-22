@@ -13,7 +13,12 @@
                             <a href="{{ route('admin.orders.show', $order) }}" class="underline decoration-stone-300 underline-offset-2 hover:decoration-black">Заказ #{{ $order->id }}</a>
                             — {{ number_format($order->total_price, 2, '.', ' ') }} ₽
                         </p>
-                        <p class="text-sm text-stone-500">Клиент: {{ $order->user?->name }} • Статус: {{ \App\Support\OrderStatus::label($order->status) }}</p>
+                        <p class="text-sm text-stone-500">
+                            Клиент: {{ $order->user?->name }} • Статус: {{ \App\Support\OrderStatus::label($order->status) }}
+                            @if($order->leave_at_door)
+                                <span class="ml-1 inline-flex rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-amber-800">У двери</span>
+                            @endif
+                        </p>
                     </div>
                     <div class="flex min-w-0 flex-wrap gap-2 overflow-x-auto pb-1 sm:flex-nowrap sm:pb-0">
                         <form method="POST" action="{{ route('admin.orders.assign-courier', $order) }}" class="flex min-w-0 flex-wrap items-center gap-2">

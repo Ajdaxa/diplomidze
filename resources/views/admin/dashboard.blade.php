@@ -60,7 +60,11 @@
             <ul class="divide-y divide-neutral-100 text-sm">
                 @forelse($lowStockProducts as $p)
                     <li class="flex justify-between gap-3 py-2">
-                        <a href="{{ route('admin.products.edit', $p) }}" class="truncate hover:underline">{{ $p->name }}</a>
+                        @if($isAdmin)
+                            <a href="{{ route('admin.products.edit', $p) }}" class="truncate hover:underline">{{ $p->name }}</a>
+                        @else
+                            <span class="truncate">{{ $p->name }}</span>
+                        @endif
                         <span class="shrink-0 font-mono text-xs text-amber-700">{{ $p->stock }} шт.</span>
                     </li>
                 @empty

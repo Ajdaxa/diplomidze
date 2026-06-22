@@ -25,6 +25,7 @@ class User extends Authenticatable
         'email',
         'phone',
         'role',
+        'courier_commission_percent',
         'loyalty_points',
         'referral_code',
         'referred_by_user_id',
@@ -49,7 +50,23 @@ class User extends Authenticatable
     protected $casts = [
         'email_verified_at' => 'datetime',
         'password' => 'hashed',
+        'courier_commission_percent' => 'decimal:2',
     ];
+
+    public function isCourier(): bool
+    {
+        return $this->hasRole('courier') || $this->role === 'courier';
+    }
+
+    public function isAdmin(): bool
+    {
+        return $this->hasRole('admin') || $this->role === 'admin';
+    }
+
+    public function isManager(): bool
+    {
+        return $this->hasRole('manager') || $this->role === 'manager';
+    }
 
     public function clientOrders(): HasMany
     {

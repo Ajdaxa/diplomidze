@@ -24,6 +24,7 @@ class CourierController extends Controller
             'phone' => ['required', 'string', 'max:20', 'unique:users,phone'],
             'email' => ['nullable', 'email', 'max:255', 'unique:users,email'],
             'password' => ['required', 'string', 'min:6'],
+            'courier_commission_percent' => ['nullable', 'numeric', 'min:0', 'max:100'],
         ]);
 
         $courier = User::query()->create([
@@ -32,6 +33,7 @@ class CourierController extends Controller
             'email' => $validated['email'] ?? null,
             'password' => Hash::make($validated['password']),
             'role' => 'courier',
+            'courier_commission_percent' => $validated['courier_commission_percent'] ?? 10,
         ]);
 
         $courier->syncRoles(['courier']);
@@ -48,6 +50,7 @@ class CourierController extends Controller
             'phone' => ['required', 'string', 'max:20', Rule::unique('users', 'phone')->ignore($courier->id)],
             'email' => ['nullable', 'email', 'max:255', Rule::unique('users', 'email')->ignore($courier->id)],
             'password' => ['nullable', 'string', 'min:6'],
+            'courier_commission_percent' => ['nullable', 'numeric', 'min:0', 'max:100'],
         ]);
 
         $courier->update([
@@ -56,6 +59,7 @@ class CourierController extends Controller
             'email' => $validated['email'] ?? null,
             'password' => ! empty($validated['password']) ? Hash::make($validated['password']) : $courier->password,
             'role' => 'courier',
+            'courier_commission_percent' => $validated['courier_commission_percent'] ?? $courier->courier_commission_percent ?? 10,
         ]);
         $courier->syncRoles(['courier']);
 

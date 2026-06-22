@@ -5,14 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>@yield('title', 'Админ-панель') — Дəб</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script defer src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <style>
-        :root { --admin-pad: clamp(1rem, 3vw, 2rem); }
-        @media (max-width: 1023px) {
-            body.admin-shell { overflow-x: hidden; }
-        }
-    </style>
+    <link rel="icon" href="{{ asset('favicon.svg') }}" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="{{ asset('apple-touch-icon.svg') }}">
+    <link rel="manifest" href="{{ asset('site.webmanifest') }}">
+    @vite(['resources/css/app.css', 'resources/js/admin-charts.js'])
+    @stack('head')
 </head>
 <body class="admin-shell min-h-screen min-h-[100dvh] bg-neutral-100 text-neutral-900"
       data-flash-status='@json(session("status"))'
@@ -24,18 +21,25 @@
            class="fixed inset-y-0 left-0 z-50 flex w-[min(18rem,88vw)] -translate-x-full flex-col border-r border-neutral-200 bg-white px-4 py-6 transition-transform duration-200 ease-out lg:static lg:z-auto lg:w-64 lg:translate-x-0 lg:shrink-0"
            aria-label="Админ-меню">
         <a href="{{ route('admin.hub') }}" class="block text-lg font-semibold tracking-widest">Дəб</a>
-        <p class="mt-1 text-xs uppercase tracking-wider text-neutral-500">Админ-панель</p>
+        <p class="mt-1 text-xs uppercase tracking-wider text-neutral-500">{{ $isAdmin ? 'Админ-панель' : 'Панель менеджера' }}</p>
         <nav class="mt-8 flex flex-col gap-1 text-sm">
             <a href="{{ route('admin.hub') }}" class="min-h-10 rounded-lg px-3 py-2 hover:bg-neutral-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neutral-900">Главная</a>
             <a href="{{ route('admin.dashboard') }}" class="min-h-10 rounded-lg px-3 py-2 hover:bg-neutral-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neutral-900">Аналитика</a>
-            <a href="{{ route('admin.categories.index') }}" class="min-h-10 rounded-lg px-3 py-2 hover:bg-neutral-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neutral-900">Категории</a>
-            <a href="{{ route('admin.products.index') }}" class="min-h-10 rounded-lg px-3 py-2 hover:bg-neutral-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neutral-900">Товары</a>
-            <a href="{{ route('admin.sales.index') }}" class="min-h-10 rounded-lg px-3 py-2 hover:bg-neutral-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neutral-900">Скидки на товары</a>
-            <a href="{{ route('admin.products.create') }}" class="min-h-10 rounded-lg px-3 py-2 hover:bg-neutral-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neutral-900">Добавить товар</a>
+            @if($isAdmin)
+                <a href="{{ route('admin.categories.index') }}" class="min-h-10 rounded-lg px-3 py-2 hover:bg-neutral-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neutral-900">Категории</a>
+            @endif
+            <a href="{{ route('admin.products.index') }}" class="min-h-10 rounded-lg px-3 py-2 hover:bg-neutral-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neutral-900">Каталог</a>
+            @if($isAdmin)
+                <a href="{{ route('admin.sales.index') }}" class="min-h-10 rounded-lg px-3 py-2 hover:bg-neutral-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neutral-900">Скидки на товары</a>
+                <a href="{{ route('admin.products.create') }}" class="min-h-10 rounded-lg px-3 py-2 hover:bg-neutral-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neutral-900">Добавить товар</a>
+            @endif
             <a href="{{ route('admin.orders.index') }}" class="min-h-10 rounded-lg px-3 py-2 hover:bg-neutral-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neutral-900">Заказы</a>
             <a href="{{ route('admin.users.index') }}" class="min-h-10 rounded-lg px-3 py-2 hover:bg-neutral-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neutral-900">Клиенты</a>
             <a href="{{ route('admin.couriers.index') }}" class="min-h-10 rounded-lg px-3 py-2 hover:bg-neutral-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neutral-900">Курьеры</a>
-            <a href="{{ route('admin.promocodes.index') }}" class="min-h-10 rounded-lg px-3 py-2 hover:bg-neutral-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neutral-900">Промокоды</a>
+            @if($isAdmin)
+                <a href="{{ route('admin.managers.index') }}" class="min-h-10 rounded-lg px-3 py-2 hover:bg-neutral-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neutral-900">Менеджеры</a>
+                <a href="{{ route('admin.promocodes.index') }}" class="min-h-10 rounded-lg px-3 py-2 hover:bg-neutral-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neutral-900">Промокоды</a>
+            @endif
             <a href="{{ route('admin.reviews.index') }}" class="min-h-10 rounded-lg px-3 py-2 hover:bg-neutral-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neutral-900">Отзывы</a>
         </nav>
         <div class="mt-auto border-t border-neutral-200 pt-4">

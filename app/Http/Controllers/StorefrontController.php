@@ -22,6 +22,14 @@ class StorefrontController extends Controller
             ->limit(8)
             ->get();
 
+        $saleProducts = Product::query()
+            ->where('is_active', true)
+            ->where('sale_percent', '>', 0)
+            ->with('categoryModel')
+            ->orderByDesc('sale_percent')
+            ->limit(4)
+            ->get();
+
         $favoriteIds = [];
         if (auth()->check()) {
             /** @var User $user */
@@ -29,7 +37,7 @@ class StorefrontController extends Controller
             $favoriteIds = $user->favoriteProducts()->pluck('products.id')->all();
         }
 
-        return view('store.home', compact('hitProducts', 'favoriteIds'));
+        return view('store.home', compact('hitProducts', 'saleProducts', 'favoriteIds'));
     }
 
     public function catalog(Request $request): View
